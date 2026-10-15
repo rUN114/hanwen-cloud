@@ -15,5 +15,6 @@ const text=csv([['姓名','札记'],['李禾','第一行\n第二行']]);
 assert.ok(text.startsWith('\ufeff'));
 assert.ok(text.includes('"李禾","第一行\n第二行"'));
 assert.equal(text.split('\r\n').length,2);
+fs.mkdirSync(new URL('evidence/',root),{recursive:true});
 fs.writeFileSync(new URL('evidence/v2-export-tests.json',root),JSON.stringify({result:'PASS',assertions:9,scope:'实际 CSV 编码函数：中文 BOM、引号、换行、公式注入防护；非表格软件兼容性全测',at:new Date().toISOString()},null,2));
 console.log('CSV actual helper: 9 assertions PASS');

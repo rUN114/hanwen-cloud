@@ -15,4 +15,5 @@ assert.throws(()=>parseRoster('a,同窗'),/格式/);
 assert.throws(()=>parseRoster(Array.from({length:51},(_,i)=>'user'+i+',同窗').join('\n')),/1至50/);
 assert.throws(()=>parseRoster('x'.repeat(100001)),/100KB/);
 const data={result:'PASS',assertions:10,scope:'实际两列CSV名册解析、UTF8 BOM、引号、重复、数量与大小限制',at:new Date().toISOString()};
+fs.mkdirSync(new URL('evidence/',root),{recursive:true});
 fs.writeFileSync(new URL('evidence/v4-roster-tests.json',root),JSON.stringify(data,null,2));console.log('Roster parser: 10 assertions PASS');

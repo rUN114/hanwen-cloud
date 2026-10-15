@@ -33,5 +33,6 @@ let calls = 0;
 await assert.rejects(workspacePages('/api/test', async () => ({ total: ++calls === 1 ? 101 : 100, items: Array.from({ length: 100 }, (_, id) => ({ id })) })), /更新/);
 await assert.rejects(workspacePages('/api/test', async () => ({ total: 1, items: [] })), /更新/);
 const evidence = { at: new Date().toISOString(), result: 'PASS', assertions: 16, scope: '实际工作台逻辑：未知进度、下一章、归档及截止、提交与评分状态、待办排序、跨页完整读取、超限和变化拒绝；不替代浏览器验收。' };
+fs.mkdirSync(new URL('evidence/', root), { recursive: true });
 fs.writeFileSync(new URL('evidence/p1-workspace-tests.json', root), JSON.stringify(evidence, null, 2));
 console.log('Workspace actual helpers: 16 assertions PASS');
