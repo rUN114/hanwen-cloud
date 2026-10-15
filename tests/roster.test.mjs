@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from '../frontend/node_modules/typescript/lib/typescript.js';
+const root=new URL('../',import.meta.url),source=fs.readFileSync(new URL('frontend/src/import-users.ts',root),'utf8');
+const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {parseRoster}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+assert.deepEqual(parseRoster('\ufeff账号,姓名\r\nSTU001,李禾'),[{username:'stu001',displayName:'李禾'}]);
+assert.deepEqual(parseRoster('"stu001","李""禾"'),[{username:'stu001',displayName:'李"禾'}]);
+assert.equal(parseRoster('username,displayName\n\nabc,同窗\n').length,1);
+assert.throws(()=>parseRoster('abc,同窗\nABC,重复'),/重复/);
+assert.throws(()=>parseRoster('abc,同窗,多余'),/两列/);
+assert.throws(()=>parseRoster('abc,"未闭合'),/引号/);
+assert.throws(()=>parseRoster('账号,姓名'),/1至50/);
+assert.throws(()=>parseRoster('a,同窗'),/格式/);
+assert.throws(()=>parseRoster(Array.from({length:51},(_,i)=>'user'+i+',同窗').join('\n')),/1至50/);
+assert.throws(()=>parseRoster('x'.repeat(100001)),/100KB/);
+const data={result:'PASS',assertions:10,scope:'实际两列CSV名册解析、UTF8 BOM、引号、重复、数量与大小限制',at:new Date().toISOString()};
+fs.writeFileSync(new URL('evidence/v4-roster-tests.json',root),JSON.stringify(data,null,2));console.log('Roster parser: 10 assertions PASS');

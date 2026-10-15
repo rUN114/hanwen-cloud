@@ -1,0 +1,14 @@
+# Same-host production. Keep backend and registry bound to loopback behind nginx.
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+logging:
+  file:
+    name: /var/log/hanwen/${spring.application.name}-${server.port}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 20MB
+      max-history: 14
+      total-size-cap: 512MB

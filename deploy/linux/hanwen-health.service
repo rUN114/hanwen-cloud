@@ -1,0 +1,11 @@
+[Unit]
+Description=Hanwen local service and disk health check
+After=network-online.target
+[Service]
+Type=oneshot
+User=hanwen
+Group=hanwen
+ExecStart=/usr/bin/python3 /opt/hanwen/current/tools/monitor.py --directory /var/lib/hanwen --history-dir /var/lib/hanwen/health --frontend-url https://hanwen.example.com
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/hanwen

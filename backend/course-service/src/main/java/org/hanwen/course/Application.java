@@ -1,0 +1,15 @@
+package org.hanwen.course;
+
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
+@SpringBootApplication(scanBasePackages = {"org.hanwen.common", "org.hanwen.course"})
+@EnableFeignClients(basePackages = {"org.hanwen.common", "org.hanwen.course"})
+@MapperScan("org.hanwen.course.mapper")
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}

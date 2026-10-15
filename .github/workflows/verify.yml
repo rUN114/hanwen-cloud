@@ -1,0 +1,48 @@
+name: Hanwen build verification
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check publication boundaries
+        run: |
+          python3 tools/check_publication.py --self-test
+          python3 tools/check_publication.py
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+      - name: Compile all services and run JUnit
+        run: mvn -B -ntp -f backend/pom.xml package
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Type-check and build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Verify export, roster, workspace and revision comparison rules
+        run: |
+          node tests/export.test.mjs
+          node tests/roster.test.mjs
+          node tests/workspace.test.mjs
+          node tests/revision-diff.test.mjs
+          node --test tests/local-demo.test.mjs
+      - name: Check local health state transition rules
+        run: python3 tests/monitor_test.py

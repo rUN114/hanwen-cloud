@@ -1,0 +1,28 @@
+[Unit]
+Description=Hanwen teaching service %i
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=hanwen
+Group=hanwen
+WorkingDirectory=/opt/hanwen/current
+EnvironmentFile=/etc/hanwen/runtime.env
+EnvironmentFile=/etc/hanwen/%i.env
+ExecStart=/usr/bin/java -Xms64m -Xmx256m -jar ${HW_JAR_FILE} --server.port=${HW_PORT} --spring.profiles.active=prod
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=40
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/hanwen /var/log/hanwen
+
+[Install]
+WantedBy=multi-user.target

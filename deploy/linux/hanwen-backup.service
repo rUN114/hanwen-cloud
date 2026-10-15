@@ -1,0 +1,14 @@
+[Unit]
+Description=Private Hanwen database and resource backup
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=hanwen
+Group=hanwen
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/hanwen/current/tools/backup.py --client-file /etc/hanwen/backup-client.ini --storage /var/lib/hanwen/uploads --destination /var/lib/hanwen/backups
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/hanwen

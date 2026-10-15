@@ -1,0 +1,15 @@
+server:
+  port: ${SERVER_PORT:8761}
+  address: 127.0.0.1
+spring:
+  application:
+    name: hw-eureka
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,30 @@
+[
+  {
+    "title": "静夜思",
+    "author": "李白",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=靜夜思&oldid=8747585",
+    "sourceNote": "采用页面所列《唐诗三百首》版本，繁体转简体，按诗句分行。",
+    "readingGuide": "项目原创阅读提示，不是古籍注释"
+  },
+  {
+    "title": "春晓",
+    "author": "孟浩然",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=春曉_(孟浩然)&oldid=10374454",
+    "sourceNote": "采用所列“夜来风雨声”版本，繁体转简体，按诗句分行。",
+    "readingGuide": "项目原创阅读提示，不是古籍注释"
+  },
+  {
+    "title": "陋室铭",
+    "author": "刘禹锡",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=陋室銘&oldid=11122639",
+    "sourceNote": "繁体转简体，保留原文措辞，按阅读节奏分段。",
+    "readingGuide": "项目原创阅读提示，不是古籍注释"
+  },
+  {
+    "title": "爱莲说",
+    "author": "周敦颐",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=愛蓮說&oldid=2676605",
+    "sourceNote": "仅收录正文，不收录页面注释；繁体转简体，保留“盛爱”等页面版本措辞。",
+    "readingGuide": "项目原创阅读提示，不是古籍注释"
+  }
+]

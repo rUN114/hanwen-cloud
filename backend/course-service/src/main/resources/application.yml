@@ -1,0 +1,51 @@
+server:
+  port: ${SERVER_PORT:8102}
+  address: 127.0.0.1
+spring:
+  application:
+    name: hw-course-service
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
+  datasource:
+    url: jdbc:mysql://${HW_DB_HOST:127.0.0.1}:${HW_DB_PORT:3307}/hw_course?connectionTimeZone=%2B08:00&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+    username: ${HW_COURSE_DB_USER:hw_course_app}
+    password: ${HW_COURSE_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 1000
+            readTimeout: 2500
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    jdbc-type-for-null: 'NULL'
+hw:
+  public-key-file: ${HW_PUBLIC_KEY_FILE}
+  service-key: ${HW_SERVICE_KEY}
+eureka:
+  client:
+    service-url:
+      defaultZone: ${HW_EUREKA_URL:http://127.0.0.1:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 5
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

@@ -1,0 +1,52 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: 127.0.0.1
+spring:
+  application:
+    name: hw-gateway
+hw:
+  public-key-file: ${HW_PUBLIC_KEY_FILE}
+  service-key: ${HW_SERVICE_KEY}
+spring.cloud.gateway.server.webflux:
+  routes:
+    - id: users
+      uri: lb://hw-user-service
+      predicates:
+        - Path=/api/auth/**,/api/users/**,/api/admin/**
+    - id: assignments
+      uri: lb://hw-assignment-service
+      predicates:
+        - Path=/api/assignments/**,/api/submissions/**,/api/grades/**,/api/teacher/assignments/**,/api/courses/*/assignments,/api/teacher/courses/*/assignment-stats
+    - id: learning
+      uri: lb://hw-learning-service
+      predicates:
+        - Path=/api/enrollments/**,/api/review-cards/**,/api/review-cards,/api/teacher/diagnostics/**,/api/teacher/practice-attempts/**,/api/notes/**,/api/favorites/**,/api/teacher/courses/*/learners,/api/teacher/courses/*/learning-insights,/api/classes/**,/api/teacher/classes/**,/api/annotations/**,/api/practices/**,/api/teacher/courses/*/practice-results,/api/inbox/receipts
+    - id: courses
+      uri: lb://hw-course-service
+      predicates:
+        - Path=/api/courses/**,/api/teacher/courses/**,/api/questions/**,/api/literature/**,/api/teacher/literature/**,/api/resources/**,/api/quizzes/**,/api/teacher/quizzes/**,/api/teacher/question-bank/**
+  globalcors:
+    cors-configurations:
+      '[/**]':
+        allowedOrigins: ${HW_FRONTEND_ORIGIN:http://127.0.0.1:5173}
+        allowedMethods: [GET,POST,PUT,DELETE,OPTIONS]
+        allowedHeaders: [Authorization,Content-Type]
+        exposedHeaders: [X-Trace-Id]
+eureka:
+  client:
+    service-url:
+      defaultZone: ${HW_EUREKA_URL:http://127.0.0.1:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 5
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
