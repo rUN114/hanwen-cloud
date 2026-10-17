@@ -15,10 +15,13 @@ public class Quiz {
     public String instructions;
     public String status;
     public Integer version;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public LocalDateTime opensAt;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public LocalDateTime closesAt;
+
     public Integer timeLimitMinutes;
     public Integer maxAttempts;
     public LocalDateTime createdAt;

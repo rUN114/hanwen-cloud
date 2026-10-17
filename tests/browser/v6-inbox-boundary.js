@@ -1,10 +1,69 @@
-async page => {
- const f=__FIXTURE__,checks=[];function check(name,ok){if(!ok)throw Error(name);checks.push({name,result:'PASS'});}
- await page.setViewportSize({width:1440,height:1000});await page.goto('http://127.0.0.1:5173/login');await page.getByRole('textbox',{name:'账号',exact:true}).fill(f.teacher.username);await page.getByRole('textbox',{name:'密码',exact:true}).fill(f.teacher.password);await page.getByRole('button',{name:'登录书院',exact:true}).click();await page.waitForURL('**/home');await page.goto('http://127.0.0.1:5173/inbox');await page.waitForFunction(()=>document.querySelector('.inbox-update-note')?.textContent.includes('最近成功更新'));
- await page.clock.install();let requests=0;const count=r=>{if(r.url().endsWith('/api/courses/inbox'))requests++;};page.on('request',count);
- await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));});await page.clock.runFor(31000);check('模拟隐藏页面时定时与可见事件均暂停',requests===0);
- let release;await page.route('**/api/courses/inbox',async r=>{await new Promise(resolve=>release=resolve);await r.continue();});await page.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));});await page.waitForFunction(()=>document.querySelector('.inbox-update-note')?.textContent.includes('最近成功更新'));await page.waitForTimeout(200);check('模拟回到前台立即核对来信',requests===1);
- await page.evaluate(()=>{for(let i=0;i<5;i++)document.dispatchEvent(new Event('visibilitychange'));});await page.clock.runFor(31000);check('正在核对时连续事件和定时器不重叠请求',requests===1);
- const done=page.waitForResponse(r=>r.url().endsWith('/api/inbox/receipts?page=1&size=100'));release();await done;await page.unroute('**/api/courses/inbox');await page.waitForTimeout(300);check('放行后真实读取完成且没有报错',await page.getByRole('alert').count()===0);
- await page.evaluate(()=>{delete document.visibilityState;});await page.getByRole('link',{name:'先生案头',exact:true}).click();await page.waitForURL('**/home');page.off('request',count);return {checks,scope:'Browser-only visibilityState and clock simulation; actual network call delayed then released. No actual background-tab behavior claimed.'};
-}
+async (page) => {
+  const f = __FIXTURE__,
+    checks = [];
+  function check(name, ok) {
+    if (!ok) throw Error(name);
+    checks.push({ name, result: "PASS" });
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("http://127.0.0.1:5173/login");
+  await page.getByRole("textbox", { name: "账号", exact: true }).fill(f.teacher.username);
+  await page.getByRole("textbox", { name: "密码", exact: true }).fill(f.teacher.password);
+  await page.getByRole("button", { name: "登录书院", exact: true }).click();
+  await page.waitForURL("**/home");
+  await page.goto("http://127.0.0.1:5173/inbox");
+  await page.waitForFunction(() =>
+    document.querySelector(".inbox-update-note")?.textContent.includes("最近成功更新"),
+  );
+  await page.clock.install();
+  let requests = 0;
+  const count = (r) => {
+    if (r.url().endsWith("/api/courses/inbox")) requests++;
+  };
+  page.on("request", count);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.clock.runFor(31000);
+  check("模拟隐藏页面时定时与可见事件均暂停", requests === 0);
+  let release;
+  await page.route("**/api/courses/inbox", async (r) => {
+    await new Promise((resolve) => (release = resolve));
+    await r.continue();
+  });
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.waitForFunction(() =>
+    document.querySelector(".inbox-update-note")?.textContent.includes("最近成功更新"),
+  );
+  await page.waitForTimeout(200);
+  check("模拟回到前台立即核对来信", requests === 1);
+  await page.evaluate(() => {
+    for (let i = 0; i < 5; i++) document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await page.clock.runFor(31000);
+  check("正在核对时连续事件和定时器不重叠请求", requests === 1);
+  const done = page.waitForResponse((r) => r.url().endsWith("/api/inbox/receipts?page=1&size=100"));
+  release();
+  await done;
+  await page.unroute("**/api/courses/inbox");
+  await page.waitForTimeout(300);
+  check("放行后真实读取完成且没有报错", (await page.getByRole("alert").count()) === 0);
+  await page.evaluate(() => {
+    delete document.visibilityState;
+  });
+  await page.getByRole("link", { name: "先生案头", exact: true }).click();
+  await page.waitForURL("**/home");
+  page.off("request", count);
+  return {
+    checks,
+    scope:
+      "Browser-only visibilityState and clock simulation; actual network call delayed then released. No actual background-tab behavior claimed.",
+  };
+};

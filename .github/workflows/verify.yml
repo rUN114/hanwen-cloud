@@ -24,6 +24,11 @@ jobs:
           java-version: '25'
           cache: maven
           cache-dependency-path: backend/**/pom.xml
+      - name: Verify Java source formatting
+        run: |
+          curl --fail --location --retry 2 https://github.com/google/google-java-format/releases/download/v1.37.0/google-java-format-1.37.0-all-deps.jar -o "$RUNNER_TEMP/google-java-format.jar"
+          echo "834b2a0c38cb774953322a84b5ca3f2f40dd3156650b3cd44d3b744345962f7a  $RUNNER_TEMP/google-java-format.jar" | sha256sum --check
+          find backend -path '*/src/*' -name '*.java' -print0 | xargs -0 java -jar "$RUNNER_TEMP/google-java-format.jar" --aosp --skip-reflowing-long-strings --dry-run --set-exit-if-changed
       - name: Compile all services and run JUnit
         run: mvn -B -ntp -f backend/pom.xml package
       - uses: actions/setup-node@v7
@@ -36,7 +41,9 @@ jobs:
         run: npm ci
       - name: Type-check and build frontend
         working-directory: frontend
-        run: npm run build
+        run: |
+          npm run format:check
+          npm run build
       - name: Verify export, roster, workspace and revision comparison rules
         run: |
           node tests/export.test.mjs

@@ -9,7 +9,7 @@ import java.util.function.Supplier;
 
 @Component
 public class Remote {
-    private static final org.slf4j.Logger log=org.slf4j.LoggerFactory.getLogger(Remote.class);
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Remote.class);
     private final CircuitBreakerRegistry registry =
             CircuitBreakerRegistry.of(
                     CircuitBreakerConfig.custom()
@@ -25,10 +25,14 @@ public class Remote {
         try {
             return registry.circuitBreaker(name).executeSupplier(action);
         } catch (ApiException e) {
-            if(e.status>=500)log.warn("Remote {} returned status {}",name,e.status);
+            if (e.status >= 500) log.warn("Remote {} returned status {}", name, e.status);
             throw e;
         } catch (Exception e) {
-            log.warn("Remote {} failed: {} / {}",name,e.getClass().getSimpleName(),e.getCause()==null?"none":e.getCause().getClass().getSimpleName());
+            log.warn(
+                    "Remote {} failed: {} / {}",
+                    name,
+                    e.getClass().getSimpleName(),
+                    e.getCause() == null ? "none" : e.getCause().getClass().getSimpleName());
             throw ApiException.unavailable();
         }
     }

@@ -30,9 +30,15 @@ public class Work {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String sourceNote;
 
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) public String translation;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) public String annotationsText;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) public String allusionsJson;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    public String translation;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    public String annotationsText;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    public String allusionsJson;
+
     public String status;
     public Integer version;
     public LocalDateTime createdAt;

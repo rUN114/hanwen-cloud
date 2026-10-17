@@ -7,6 +7,7 @@ frontend/dist/
 *.log
 evidence/private/
 .playwright-cli/
+.playwright-mcp/
 __pycache__/
 *.pyc
 
@@ -22,6 +23,7 @@ __pycache__/
 !/docs/书院画卷来源与使用说明.md
 !/docs/诗文来源.json
 !/docs/版本管理.md
+!/docs/代码结构与格式.md
 !/docs/images/
 **/.env
 **/.env.*

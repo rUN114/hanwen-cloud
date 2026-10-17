@@ -15,7 +15,7 @@
 | 1959.46 | 董其昌《江山秋霁图》 | https://www.clevelandart.org/art/1959.46 |
 | 1959.138 | 张渥绘、褚奂书《九歌图》及三张馆藏局部 | https://www.clevelandart.org/art/1959.138 |
 
-馆方政策：https://www.clevelandart.org/open-access 。图像源链接和原图 SHA256 见 `frontend/src/museum-paintings.json`；题名、年代和归属说明见 `docs/书院画卷来源与使用说明.md`。示例界面截图内的馆藏照片同样适用以上说明。
+馆方政策：https://www.clevelandart.org/open-access 。图像源链接和原图 SHA256 见 `frontend/src/data/museum-paintings.json`；题名、年代和归属说明见 `docs/书院画卷来源与使用说明.md`。示例界面截图内的馆藏照片同样适用以上说明。
 
 ## 项目插画、纹样和字体
 
@@ -26,5 +26,7 @@
 数据库初始诗文来自古典公版作品，仅收入正文及本项目原创阅读提示，不收入现代注释或翻译。逐篇固定版本入口及转换说明见 `docs/诗文来源.json`，页面保留来源字段。维基文库页面上的其他内容不纳入本项目源码许可。
 
 ## 依赖
+
+开发格式工具包括 Prettier 3.9.10（MIT）和 google-java-format 1.37.0（Apache-2.0）。Java 格式工具从 Google 官方 Release 下载并核对 SHA256，不随源码分发二进制；Prettier 仅作为开发依赖。
 
 Java 与前端依赖的版本分别由 Maven POM 和 `frontend/package-lock.json` 锁定。Spring、MyBatis-Plus、Vue、Vue Router、Element Plus、Vite 等依赖保留其上游许可；依赖二进制及 node_modules 不作为原创源码提交。部署时应保留依赖自带的许可及通知。

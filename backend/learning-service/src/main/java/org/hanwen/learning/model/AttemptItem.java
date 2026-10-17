@@ -22,6 +22,7 @@ public class AttemptItem {
     public Integer points;
     public String knowledgePoint;
     public Integer awardedPoints;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String teacherComment;
 }

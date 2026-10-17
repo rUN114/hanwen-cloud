@@ -1,38 +1,81 @@
-import fs from 'node:fs';
-import assert from 'node:assert/strict';
-import ts from '../frontend/node_modules/typescript/lib/typescript.js';
-const root = new URL('../', import.meta.url);
-const source = fs.readFileSync(new URL('frontend/src/course-workspace.ts', root), 'utf8');
-const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { nextChapter, taskState, orderTasks, workspacePages } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
-const chapters = [{ id: '30' }, { id: '31' }, { id: '32' }];
-const progress = ids => ({ items: ids.map(chapterId => ({ chapterId, completed: true })) });
+import fs from "node:fs";
+import assert from "node:assert/strict";
+import ts from "../frontend/node_modules/typescript/lib/typescript.js";
+const root = new URL("../", import.meta.url);
+const source = fs.readFileSync(new URL("frontend/src/utils/course-workspace.ts", root), "utf8");
+const code = ts.transpileModule(source, {
+  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+const { nextChapter, taskState, orderTasks, workspacePages } = await import(
+  "data:text/javascript;base64," + Buffer.from(code).toString("base64")
+);
+const chapters = [{ id: "30" }, { id: "31" }, { id: "32" }];
+const progress = (ids) => ({ items: ids.map((chapterId) => ({ chapterId, completed: true })) });
 assert.equal(nextChapter(chapters, null), null);
-assert.equal(nextChapter(chapters, progress([])).id, '30');
-assert.equal(nextChapter(chapters, progress(['30'])).id, '31');
-assert.equal(nextChapter(chapters, progress(['30', '31', '32'])), null);
-const now = Date.parse('2026-10-11T12:00:00+08:00');
-const task = { id: '1', status: 'PUBLISHED', deadlineAt: '2026-10-11T13:00:00+08:00' };
-assert.equal(taskState(task, undefined, false, 'PUBLISHED', now).kind, 'unknown');
-assert.equal(taskState(task, undefined, true, 'ARCHIVED', now).writable, false);
-assert.equal(taskState({ ...task, deadlineAt: '2026-10-11T12:00:00+08:00' }, undefined, true, 'PUBLISHED', now).kind, 'closed');
-assert.equal(taskState(task, { status: 'SUBMITTED' }, true, 'PUBLISHED', now).kind, 'submitted');
-assert.equal(taskState(task, { status: 'GRADED', score: '88' }, true, 'ARCHIVED', now).kind, 'graded');
-assert.equal(taskState(task, undefined, true, 'PUBLISHED', now).writable, true);
-assert.deepEqual(orderTasks([{ ...task, id: '2', deadlineAt: null }, task, { ...task, id: '3', status: 'CLOSED' }], [], 'PUBLISHED', now).map(t => t.id), ['1', '2', '3']);
+assert.equal(nextChapter(chapters, progress([])).id, "30");
+assert.equal(nextChapter(chapters, progress(["30"])).id, "31");
+assert.equal(nextChapter(chapters, progress(["30", "31", "32"])), null);
+const now = Date.parse("2026-10-11T12:00:00+08:00");
+const task = { id: "1", status: "PUBLISHED", deadlineAt: "2026-10-11T13:00:00+08:00" };
+assert.equal(taskState(task, undefined, false, "PUBLISHED", now).kind, "unknown");
+assert.equal(taskState(task, undefined, true, "ARCHIVED", now).writable, false);
+assert.equal(
+  taskState({ ...task, deadlineAt: "2026-10-11T12:00:00+08:00" }, undefined, true, "PUBLISHED", now)
+    .kind,
+  "closed",
+);
+assert.equal(taskState(task, { status: "SUBMITTED" }, true, "PUBLISHED", now).kind, "submitted");
+assert.equal(
+  taskState(task, { status: "GRADED", score: "88" }, true, "ARCHIVED", now).kind,
+  "graded",
+);
+assert.equal(taskState(task, undefined, true, "PUBLISHED", now).writable, true);
+assert.deepEqual(
+  orderTasks(
+    [{ ...task, id: "2", deadlineAt: null }, task, { ...task, id: "3", status: "CLOSED" }],
+    [],
+    "PUBLISHED",
+    now,
+  ).map((t) => t.id),
+  ["1", "2", "3"],
+);
 const paths = [];
-const items = await workspacePages('/api/grades/me?courseId=29', async path => {
+const items = await workspacePages("/api/grades/me?courseId=29", async (path) => {
   paths.push(path);
-  const p = Number(new URL(path, 'http://127.0.0.1').searchParams.get('page'));
-  return { items: p === 1 ? Array.from({ length: 100 }, (_, id) => ({ id })) : [{ id: 100 }], total: 101 };
+  const p = Number(new URL(path, "http://127.0.0.1").searchParams.get("page"));
+  return {
+    items: p === 1 ? Array.from({ length: 100 }, (_, id) => ({ id })) : [{ id: 100 }],
+    total: 101,
+  };
 });
 assert.equal(items.length, 101);
-assert.ok(paths.every(p => p.includes('courseId=29&size=100&page=')));
-await assert.rejects(workspacePages('/api/test', async () => ({ total: 501, items: [] })), /上限/);
+assert.ok(paths.every((p) => p.includes("courseId=29&size=100&page=")));
+await assert.rejects(
+  workspacePages("/api/test", async () => ({ total: 501, items: [] })),
+  /上限/,
+);
 let calls = 0;
-await assert.rejects(workspacePages('/api/test', async () => ({ total: ++calls === 1 ? 101 : 100, items: Array.from({ length: 100 }, (_, id) => ({ id })) })), /更新/);
-await assert.rejects(workspacePages('/api/test', async () => ({ total: 1, items: [] })), /更新/);
-const evidence = { at: new Date().toISOString(), result: 'PASS', assertions: 16, scope: '实际工作台逻辑：未知进度、下一章、归档及截止、提交与评分状态、待办排序、跨页完整读取、超限和变化拒绝；不替代浏览器验收。' };
-fs.mkdirSync(new URL('evidence/', root), { recursive: true });
-fs.writeFileSync(new URL('evidence/p1-workspace-tests.json', root), JSON.stringify(evidence, null, 2));
-console.log('Workspace actual helpers: 16 assertions PASS');
+await assert.rejects(
+  workspacePages("/api/test", async () => ({
+    total: ++calls === 1 ? 101 : 100,
+    items: Array.from({ length: 100 }, (_, id) => ({ id })),
+  })),
+  /更新/,
+);
+await assert.rejects(
+  workspacePages("/api/test", async () => ({ total: 1, items: [] })),
+  /更新/,
+);
+const evidence = {
+  at: new Date().toISOString(),
+  result: "PASS",
+  assertions: 16,
+  scope:
+    "实际工作台逻辑：未知进度、下一章、归档及截止、提交与评分状态、待办排序、跨页完整读取、超限和变化拒绝；不替代浏览器验收。",
+};
+fs.mkdirSync(new URL("evidence/", root), { recursive: true });
+fs.writeFileSync(
+  new URL("evidence/p1-workspace-tests.json", root),
+  JSON.stringify(evidence, null, 2),
+);
+console.log("Workspace actual helpers: 16 assertions PASS");

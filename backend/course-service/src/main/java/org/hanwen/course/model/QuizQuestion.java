@@ -18,8 +18,10 @@ public class QuizQuestion {
     public Integer sortNo;
     public String questionType;
     public Integer points;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String knowledgePoint;
+
     public Long bankId;
     public Integer bankVersion;
 }

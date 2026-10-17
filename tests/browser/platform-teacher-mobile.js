@@ -1,7 +1,56 @@
-async page => {
- const f=__FIXTURE__,checks=[];function check(name,ok){if(!ok)throw Error(name);checks.push({name,result:'PASS'})}
- await page.goto('http://127.0.0.1:5173/login');await page.getByRole('textbox',{name:'账号',exact:true}).fill(f.teacher.username);await page.getByRole('textbox',{name:'密码',exact:true}).fill(f.teacher.password);await page.getByRole('button',{name:'登录书院',exact:true}).click();await page.waitForURL('**/home');
- await page.goto('http://127.0.0.1:5173/teacher/courses/'+f.courseId+'/chapters/'+f.chapterId+'/edit');const doc=page.getByRole('textbox',{name:'排版讲义',exact:true});await doc.waitFor();const original=await doc.inputValue();await doc.fill('# 安全预览\n<img src=x onerror="window.__hwUnsafe=1">');await page.getByRole('button',{name:'阅读预览',exact:true}).click();check('危险HTML在预览中仅作为文字显示',(await page.locator('.lesson-document').innerText()).includes('<img'));check('讲义预览没有执行输入脚本',await page.evaluate(()=>window.__hwUnsafe===undefined));await page.getByRole('button',{name:'保存章节',exact:true}).click();await page.getByRole('alert').filter({hasText:'不接受HTML'}).waitFor();check('危险讲义由后端拒绝保存',true);await page.getByRole('button',{name:'继续编辑',exact:true}).click();await doc.fill(original);await page.getByRole('button',{name:'保存章节',exact:true}).click();await page.waitForURL('**/chapters');
- for(const width of [390,320]){await page.setViewportSize({width,height:900});for(const [name,path,ready] of [['grading','/teacher/submissions/'+f.uiSubmissionIds[0]+'/grade','朱批笺'],['review','/teacher/review','读其文，知其意'],['policy','/courses/'+f.courseId+'/gradebook','总评口径'],['classes','/classes','我的学舍']]){await page.goto('http://127.0.0.1:5173'+path);await page.getByRole('heading',{name:ready,exact:true}).waitFor();const bounds=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth}));check(width+'px教师'+name+'无页面横向溢出',bounds.scroll<=bounds.width+1);await page.screenshot({path:f.output+'/platform-teacher-'+name+'-'+width+'.png',fullPage:true});}}
- await page.setViewportSize({width:1440,height:900});return {checks};
-}
+async (page) => {
+  const f = __FIXTURE__,
+    checks = [];
+  function check(name, ok) {
+    if (!ok) throw Error(name);
+    checks.push({ name, result: "PASS" });
+  }
+  await page.goto("http://127.0.0.1:5173/login");
+  await page.getByRole("textbox", { name: "账号", exact: true }).fill(f.teacher.username);
+  await page.getByRole("textbox", { name: "密码", exact: true }).fill(f.teacher.password);
+  await page.getByRole("button", { name: "登录书院", exact: true }).click();
+  await page.waitForURL("**/home");
+  await page.goto(
+    "http://127.0.0.1:5173/teacher/courses/" + f.courseId + "/chapters/" + f.chapterId + "/edit",
+  );
+  const doc = page.getByRole("textbox", { name: "排版讲义", exact: true });
+  await doc.waitFor();
+  const original = await doc.inputValue();
+  await doc.fill('# 安全预览\n<img src=x onerror="window.__hwUnsafe=1">');
+  await page.getByRole("button", { name: "阅读预览", exact: true }).click();
+  check(
+    "危险HTML在预览中仅作为文字显示",
+    (await page.locator(".lesson-document").innerText()).includes("<img"),
+  );
+  check("讲义预览没有执行输入脚本", await page.evaluate(() => window.__hwUnsafe === undefined));
+  await page.getByRole("button", { name: "保存章节", exact: true }).click();
+  await page.getByRole("alert").filter({ hasText: "不接受HTML" }).waitFor();
+  check("危险讲义由后端拒绝保存", true);
+  await page.getByRole("button", { name: "继续编辑", exact: true }).click();
+  await doc.fill(original);
+  await page.getByRole("button", { name: "保存章节", exact: true }).click();
+  await page.waitForURL("**/chapters");
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [name, path, ready] of [
+      ["grading", "/teacher/submissions/" + f.uiSubmissionIds[0] + "/grade", "朱批笺"],
+      ["review", "/teacher/review", "读其文，知其意"],
+      ["policy", "/courses/" + f.courseId + "/gradebook", "总评口径"],
+      ["classes", "/classes", "我的学舍"],
+    ]) {
+      await page.goto("http://127.0.0.1:5173" + path);
+      await page.getByRole("heading", { name: ready, exact: true }).waitFor();
+      const bounds = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        width: innerWidth,
+      }));
+      check(width + "px教师" + name + "无页面横向溢出", bounds.scroll <= bounds.width + 1);
+      await page.screenshot({
+        path: f.output + "/platform-teacher-" + name + "-" + width + ".png",
+        fullPage: true,
+      });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  return { checks };
+};

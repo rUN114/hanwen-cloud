@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.*;
 public class RunQuestion {
     @TableId(type = IdType.AUTO)
     public Long id;
+
     public Long runId;
     public Long questionId;
     public String prompt;
@@ -18,6 +19,7 @@ public class RunQuestion {
     public String questionType;
     public Integer points;
     public String knowledgePoint;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String selectedOption;
 }

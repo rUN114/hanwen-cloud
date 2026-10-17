@@ -17,5 +17,6 @@ public class GradeHistory {
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String rubricScores;
+
     public LocalDateTime gradedAt;
 }

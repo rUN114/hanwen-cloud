@@ -1,8 +1,46 @@
-async page => {
- const f=__FIXTURE__,checks=[];function check(name,ok){if(!ok)throw Error(name);checks.push({name,result:'PASS'})}
- async function login(s){await page.goto('http://127.0.0.1:5173/login');await page.getByRole('textbox',{name:'账号',exact:true}).fill(s.username);await page.getByRole('textbox',{name:'密码',exact:true}).fill(s.initialPassword);await page.getByRole('button',{name:'登录书院',exact:true}).click();await page.waitForURL('**/home');}
- let ids=[];for(let i=0;i<2;i++){await login(f.students[i]);await page.goto('http://127.0.0.1:5173/student/assignments/'+f.uiTaskId+'/submit');await page.getByLabel('我的答案',{exact:true}).fill('“举头”与“低头”形成视线和情感的转折。月色从眼前景物变成对故乡的牵挂。原文“低头思故乡”点明情感，分析应以诗句为依据。');await page.getByText('草稿已保存',{exact:false}).first().waitFor();check('同窗'+(i+1)+'草稿实际保存到账号',true);
- if(i===0){await page.getByLabel('选择习作附件').setInputFiles(f.sampleFile);await page.getByRole('button',{name:'上传附件',exact:true}).click();await page.getByText('浏览器随卷札记.txt',{exact:false}).first().waitFor();check('页面实际上传随卷附件',true);await page.screenshot({path:f.output+'/platform-student-answer.png',fullPage:true});}
- const response=page.waitForResponse(r=>r.url().endsWith('/api/assignments/'+f.uiTaskId+'/submissions')&&r.request().method()==='POST'&&r.status()===200);await page.getByRole('button',{name:'提交答案',exact:true}).click();const data=(await(await response).json()).data;ids.push(data.id);await page.getByText('答案已正式提交',{exact:true}).waitFor();check('同窗'+(i+1)+'通过页面正式交卷',true);}
- return {checks,submissionIds:ids};
-}
+async (page) => {
+  const f = __FIXTURE__,
+    checks = [];
+  function check(name, ok) {
+    if (!ok) throw Error(name);
+    checks.push({ name, result: "PASS" });
+  }
+  async function login(s) {
+    await page.goto("http://127.0.0.1:5173/login");
+    await page.getByRole("textbox", { name: "账号", exact: true }).fill(s.username);
+    await page.getByRole("textbox", { name: "密码", exact: true }).fill(s.initialPassword);
+    await page.getByRole("button", { name: "登录书院", exact: true }).click();
+    await page.waitForURL("**/home");
+  }
+  let ids = [];
+  for (let i = 0; i < 2; i++) {
+    await login(f.students[i]);
+    await page.goto("http://127.0.0.1:5173/student/assignments/" + f.uiTaskId + "/submit");
+    await page
+      .getByLabel("我的答案", { exact: true })
+      .fill(
+        "“举头”与“低头”形成视线和情感的转折。月色从眼前景物变成对故乡的牵挂。原文“低头思故乡”点明情感，分析应以诗句为依据。",
+      );
+    await page.getByText("草稿已保存", { exact: false }).first().waitFor();
+    check("同窗" + (i + 1) + "草稿实际保存到账号", true);
+    if (i === 0) {
+      await page.getByLabel("选择习作附件").setInputFiles(f.sampleFile);
+      await page.getByRole("button", { name: "上传附件", exact: true }).click();
+      await page.getByText("浏览器随卷札记.txt", { exact: false }).first().waitFor();
+      check("页面实际上传随卷附件", true);
+      await page.screenshot({ path: f.output + "/platform-student-answer.png", fullPage: true });
+    }
+    const response = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/assignments/" + f.uiTaskId + "/submissions") &&
+        r.request().method() === "POST" &&
+        r.status() === 200,
+    );
+    await page.getByRole("button", { name: "提交答案", exact: true }).click();
+    const data = (await (await response).json()).data;
+    ids.push(data.id);
+    await page.getByText("答案已正式提交", { exact: true }).waitFor();
+    check("同窗" + (i + 1) + "通过页面正式交卷", true);
+  }
+  return { checks, submissionIds: ids };
+};

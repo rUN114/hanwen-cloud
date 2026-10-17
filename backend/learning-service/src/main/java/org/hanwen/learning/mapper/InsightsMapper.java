@@ -1,13 +1,27 @@
 package org.hanwen.learning.mapper;
+
 import org.apache.ibatis.annotations.*;
+
 import java.util.*;
+
 public interface InsightsMapper {
- @Select("SELECT e.student_id AS studentId, e.joined_at AS joinedAt, (SELECT COUNT(*) FROM learning_progress p WHERE p.enrollment_id=e.id AND p.completed=1) AS completed, GREATEST(e.joined_at, COALESCE((SELECT MAX(p.updated_at) FROM learning_progress p WHERE p.enrollment_id=e.id),e.joined_at),COALESCE((SELECT MAX(n.updated_at) FROM learning_note n WHERE n.enrollment_id=e.id),e.joined_at),COALESCE((SELECT MAX(a.completed_at) FROM quiz_attempt a WHERE a.course_id=e.course_id AND a.student_id=e.student_id),e.joined_at)) AS lastRecordedAt FROM course_enrollment e WHERE e.course_id=#{courseId} ORDER BY e.id LIMIT 501")
- List<Map<String,Object>> learners(@Param("courseId")long courseId);
- @Select("SELECT a.student_id AS studentId, COUNT(*) AS latestAttempts, SUM(a.grading_status='PENDING') AS pending, SUM(a.grading_status='GRADED') AS graded, ROUND(AVG(CASE WHEN a.grading_status='GRADED' THEN a.score/a.total*100 ELSE NULL END),2) AS averagePercent FROM quiz_attempt a JOIN (SELECT MAX(id) AS id FROM quiz_attempt WHERE course_id=#{courseId} GROUP BY student_id,quiz_id) latest ON latest.id=a.id GROUP BY a.student_id")
- List<Map<String,Object>> practice(@Param("courseId")long courseId);
- @Select("<script>SELECT COALESCE(NULLIF(i.knowledge_point,''),'未标记知识点') AS knowledgePoint, COUNT(*) AS responses, COUNT(DISTINCT a.student_id) AS students, SUM(COALESCE(i.awarded_points,IF(i.correct,i.points,0))) AS earned, SUM(i.points) AS maximum, ROUND(SUM(COALESCE(i.awarded_points,IF(i.correct,i.points,0)))/SUM(i.points)*100,2) AS percent FROM quiz_attempt_item i JOIN quiz_attempt a ON a.id=i.attempt_id JOIN (SELECT MAX(id) AS id FROM quiz_attempt WHERE course_id=#{courseId} GROUP BY student_id,quiz_id) latest ON latest.id=a.id WHERE a.grading_status='GRADED' <if test='students != null'>AND a.student_id IN <foreach collection='students' item='student' open='(' separator=',' close=')'>#{student}</foreach></if> GROUP BY knowledgePoint ORDER BY percent,knowledgePoint LIMIT 201</script>")
- List<Map<String,Object>> points(@Param("courseId")long courseId,@Param("students")List<Long> students);
- @Select("<script>SELECT DATE_FORMAT(a.completed_at,'%x-W%v') AS week, COUNT(*) AS submissions, COUNT(DISTINCT a.student_id) AS students, SUM(a.grading_status='GRADED') AS graded, ROUND(AVG(CASE WHEN a.grading_status='GRADED' THEN a.score/a.total*100 ELSE NULL END),2) AS averagePercent FROM quiz_attempt a WHERE a.course_id=#{courseId} AND a.completed_at &gt;= #{from} <if test='students != null'>AND a.student_id IN <foreach collection='students' item='student' open='(' separator=',' close=')'>#{student}</foreach></if> GROUP BY week ORDER BY week</script>")
- List<Map<String,Object>> weeks(@Param("courseId")long courseId,@Param("from")java.time.LocalDateTime from,@Param("students")List<Long> students);
+    @Select(
+            "SELECT e.student_id AS studentId, e.joined_at AS joinedAt, (SELECT COUNT(*) FROM learning_progress p WHERE p.enrollment_id=e.id AND p.completed=1) AS completed, GREATEST(e.joined_at, COALESCE((SELECT MAX(p.updated_at) FROM learning_progress p WHERE p.enrollment_id=e.id),e.joined_at),COALESCE((SELECT MAX(n.updated_at) FROM learning_note n WHERE n.enrollment_id=e.id),e.joined_at),COALESCE((SELECT MAX(a.completed_at) FROM quiz_attempt a WHERE a.course_id=e.course_id AND a.student_id=e.student_id),e.joined_at)) AS lastRecordedAt FROM course_enrollment e WHERE e.course_id=#{courseId} ORDER BY e.id LIMIT 501")
+    List<Map<String, Object>> learners(@Param("courseId") long courseId);
+
+    @Select(
+            "SELECT a.student_id AS studentId, COUNT(*) AS latestAttempts, SUM(a.grading_status='PENDING') AS pending, SUM(a.grading_status='GRADED') AS graded, ROUND(AVG(CASE WHEN a.grading_status='GRADED' THEN a.score/a.total*100 ELSE NULL END),2) AS averagePercent FROM quiz_attempt a JOIN (SELECT MAX(id) AS id FROM quiz_attempt WHERE course_id=#{courseId} GROUP BY student_id,quiz_id) latest ON latest.id=a.id GROUP BY a.student_id")
+    List<Map<String, Object>> practice(@Param("courseId") long courseId);
+
+    @Select(
+            "<script>SELECT COALESCE(NULLIF(i.knowledge_point,''),'未标记知识点') AS knowledgePoint, COUNT(*) AS responses, COUNT(DISTINCT a.student_id) AS students, SUM(COALESCE(i.awarded_points,IF(i.correct,i.points,0))) AS earned, SUM(i.points) AS maximum, ROUND(SUM(COALESCE(i.awarded_points,IF(i.correct,i.points,0)))/SUM(i.points)*100,2) AS percent FROM quiz_attempt_item i JOIN quiz_attempt a ON a.id=i.attempt_id JOIN (SELECT MAX(id) AS id FROM quiz_attempt WHERE course_id=#{courseId} GROUP BY student_id,quiz_id) latest ON latest.id=a.id WHERE a.grading_status='GRADED' <if test='students != null'>AND a.student_id IN <foreach collection='students' item='student' open='(' separator=',' close=')'>#{student}</foreach></if> GROUP BY knowledgePoint ORDER BY percent,knowledgePoint LIMIT 201</script>")
+    List<Map<String, Object>> points(
+            @Param("courseId") long courseId, @Param("students") List<Long> students);
+
+    @Select(
+            "<script>SELECT DATE_FORMAT(a.completed_at,'%x-W%v') AS week, COUNT(*) AS submissions, COUNT(DISTINCT a.student_id) AS students, SUM(a.grading_status='GRADED') AS graded, ROUND(AVG(CASE WHEN a.grading_status='GRADED' THEN a.score/a.total*100 ELSE NULL END),2) AS averagePercent FROM quiz_attempt a WHERE a.course_id=#{courseId} AND a.completed_at &gt;= #{from} <if test='students != null'>AND a.student_id IN <foreach collection='students' item='student' open='(' separator=',' close=')'>#{student}</foreach></if> GROUP BY week ORDER BY week</script>")
+    List<Map<String, Object>> weeks(
+            @Param("courseId") long courseId,
+            @Param("from") java.time.LocalDateTime from,
+            @Param("students") List<Long> students);
 }

@@ -1,5 +1,11 @@
 package org.hanwen.common;
-import java.io.*;import java.nio.charset.*;import java.util.*;import javax.imageio.ImageIO;
+
+import java.io.*;
+import java.nio.charset.*;
+import java.util.*;
+
+import javax.imageio.ImageIO;
+
 public final class FileRules {
     static boolean prefix(byte[] bytes, byte... expected) {
         if (bytes.length < expected.length) return false;
@@ -18,8 +24,15 @@ public final class FileRules {
             mime = "application/pdf";
         if (ext.equals("png")
                 && prefix(
-                        data, (byte) 137, (byte) 80, (byte) 78, (byte) 71, (byte) 13, (byte) 10,
-                        (byte) 26, (byte) 10)) mime = "image/png";
+                        data,
+                        (byte) 137,
+                        (byte) 80,
+                        (byte) 78,
+                        (byte) 71,
+                        (byte) 13,
+                        (byte) 10,
+                        (byte) 26,
+                        (byte) 10)) mime = "image/png";
         if (Set.of("jpg", "jpeg").contains(ext) && prefix(data, (byte) 255, (byte) 216, (byte) 255))
             mime = "image/jpeg";
         if (ext.equals("mp3")
@@ -64,5 +77,4 @@ public final class FileRules {
         }
         return mime;
     }
-
 }

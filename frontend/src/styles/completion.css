@@ -1,0 +1,357 @@
+.review-banner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 28px 32px;
+  margin-bottom: 22px;
+  border-block: 2px solid #7e3535;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 26px, #7e35350b 27px), #fcf6eb;
+}
+.review-banner h2 {
+  font-family: KaiTi, STKaiti, serif;
+  font-size: 30px;
+  margin: 0;
+}
+.review-banner p {
+  margin-bottom: 0;
+}
+.rubric-editor {
+  border: 1px solid #d5c1aa;
+  margin: 20px 0;
+  padding: 18px;
+  min-width: 0;
+}
+.rubric-editor legend {
+  padding: 0 10px;
+  font-family: KaiTi, STKaiti, serif;
+  font-size: 21px;
+}
+.rubric-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+}
+.rubric-row small {
+  display: block;
+  color: #75665a;
+}
+.feedback-stamps {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0;
+}
+.feedback-stamps button {
+  font: inherit;
+  text-align: left;
+  padding: 9px;
+  border: 1px dashed #a85b52;
+  background: #fff8ed;
+  color: #7d3735;
+  cursor: pointer;
+}
+.feedback-stamps button:focus-visible {
+  outline: 3px solid #315e63;
+  outline-offset: 2px;
+}
+.grade-policy {
+  margin-bottom: 20px;
+  border-left: 5px solid #315e63;
+}
+.grade-policy .toolbar {
+  align-items: end;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.grade-policy label {
+  display: grid;
+  gap: 8px;
+  max-width: 220px;
+}
+.grade-details {
+  margin-top: 20px;
+}
+.grade-details ul {
+  list-style: none;
+  padding: 0;
+}
+.grade-details li {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid #ddcdb5;
+}
+.answer-scroll {
+  border-top: 5px double #315e63;
+}
+.answer-scroll .small-seal {
+  float: right;
+}
+.grade-layout > * {
+  min-width: 0;
+}
+.grade-details span {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .review-banner {
+    padding: 20px;
+    gap: 16px;
+  }
+  .review-banner h2 {
+    font-size: 25px;
+  }
+  .rubric-editor {
+    padding: 12px;
+  }
+  .rubric-row {
+    gap: 8px;
+  }
+  .grade-details li {
+    display: grid;
+    gap: 8px;
+  }
+  .grade-policy .toolbar label {
+    max-width: none;
+    width: 100%;
+  }
+  .grade-policy .el-select {
+    width: 100%;
+  }
+}
+
+.document-editor {
+  border: 1px solid #c6c8b6;
+  overflow: hidden;
+  background: #fffdf7;
+  width: 100%;
+}
+.editor-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid #c6c8b6;
+  background: #eef0e3;
+}
+.editor-tools button {
+  padding: 10px 13px;
+  font: inherit;
+  border: 0;
+  border-right: 1px solid #d4d8c4;
+  background: transparent;
+  cursor: pointer;
+  color: #244e4d;
+}
+.editor-tools button:focus-visible {
+  outline: 3px solid #315e63;
+  outline-offset: -3px;
+}
+.document-editor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  border: 0;
+  padding: 18px;
+  line-height: 1.8;
+  font: inherit;
+  background: #fffdf7;
+  color: inherit;
+}
+.document-editor .field-hint {
+  padding: 0 18px;
+}
+.lesson-document {
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+  max-width: 72ch;
+  padding: 18px;
+}
+.lesson-document p {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  min-height: 1em;
+}
+.lesson-document h2,
+.lesson-document h3 {
+  font-family: KaiTi, STKaiti, serif;
+  color: #315e63;
+}
+.lesson-document blockquote {
+  margin: 18px 0;
+  padding: 16px 22px;
+  border-left: 4px solid #a2483e;
+  background: #faf1e4;
+}
+.lesson-bullet:before {
+  content: "◆";
+  font-size: 10px;
+  margin-right: 14px;
+  color: #315e63;
+}
+.lesson-figure {
+  margin: 20px 0;
+  text-align: center;
+}
+.lesson-figure img {
+  max-width: 100%;
+  height: auto;
+  max-height: 650px;
+  object-fit: contain;
+}
+.lesson-figure figcaption {
+  font-size: 14px;
+  color: #75665a;
+}
+.chapter-lesson {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 3px double #c3b494;
+}
+.literature-parallel.comparing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+}
+.literature-parallel .classic-text {
+  min-width: 0;
+}
+.translation-sheet {
+  border-left: 1px solid #ccbd9f;
+  padding: 0 20px;
+  line-height: 2;
+  min-width: 0;
+}
+.translation-sheet h2,
+.word-notes h2 {
+  font:
+    24px KaiTi,
+    STKaiti,
+    serif;
+  color: #315e63;
+}
+.compare-toggle {
+  font: inherit;
+  margin: 12px 0;
+  padding: 8px 16px;
+  background: #e9eee5;
+  border: 1px solid #577879;
+  color: #244e4d;
+  cursor: pointer;
+}
+.word-notes {
+  padding: 20px;
+  border-top: 3px double #baa681;
+  margin-top: 22px;
+  background: #f9f2e6;
+}
+.allusion-shelf article {
+  padding: 15px 0;
+  border-bottom: 1px dashed #b7aa91;
+}
+.allusion-shelf h4 {
+  font:
+    23px KaiTi,
+    STKaiti,
+    serif;
+  color: #91423b;
+  margin: 0;
+}
+.allusion-shelf a {
+  display: inline-block;
+  margin-right: 16px;
+}
+.allusion-edit {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #baa681;
+  margin: 20px 0;
+}
+.attachment-panel {
+  margin: 22px 0;
+  padding: 18px 0;
+  border-top: 1px dashed #b7aa91;
+}
+.attachment-panel ul {
+  padding: 0;
+  list-style: none;
+}
+.attachment-panel li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.attachment-panel li > span {
+  flex: 1;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.attachment-panel small {
+  display: block;
+  color: #75665a;
+}
+.attachment-panel input {
+  max-width: 100%;
+  margin: 12px 0;
+}
+.rubric-feedback {
+  padding: 0;
+  list-style: none;
+}
+.rubric-feedback li {
+  padding: 8px 0;
+  border-bottom: 1px dashed #c8a193;
+}
+.image-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .literature-parallel.comparing {
+    grid-template-columns: 1fr;
+  }
+  .translation-sheet {
+    border-left: 0;
+    border-top: 3px double #ccbd9f;
+    padding: 18px 0;
+  }
+  .lesson-document {
+    padding: 12px 0;
+  }
+  .editor-tools button {
+    padding: 8px 10px;
+  }
+  .document-editor .lesson-document {
+    padding: 12px;
+  }
+  .attachment-panel li {
+    flex-wrap: wrap;
+  }
+  .literature-reading > * {
+    min-width: 0;
+  }
+  .classic-text.vertical {
+    max-height: 65vh;
+    overflow: auto;
+  }
+}
+.recipient-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+}
+.classic-text {
+  line-break: strict;
+  overflow-wrap: break-word;
+}
+@media (max-width: 360px) {
+  .classic-text:not(.large):not(.vertical):not(.prose) {
+    font-size: 18px;
+    line-height: 2.3;
+  }
+}

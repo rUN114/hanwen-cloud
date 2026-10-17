@@ -1,1 +1,13 @@
-async page=>{const f=__FIXTURE__,base='http://127.0.0.1:5173';await page.goto(base+'/teacher/courses/'+f.courseId+'/team');await page.locator('.team-roster').waitFor();await page.screenshot({path:f.output+'/v7-team-viewport.png'});await page.waitForTimeout(15000);await page.getByRole('button',{name:'课程交接 · 留痕'}).click();await page.waitForTimeout(15000);await page.evaluate(()=>scrollTo({top:document.body.scrollHeight,behavior:'smooth'}));await page.waitForTimeout(8000);return {shown:'course team and handover history'};}
+async (page) => {
+  const f = __FIXTURE__,
+    base = "http://127.0.0.1:5173";
+  await page.goto(base + "/teacher/courses/" + f.courseId + "/team");
+  await page.locator(".team-roster").waitFor();
+  await page.screenshot({ path: f.output + "/v7-team-viewport.png" });
+  await page.waitForTimeout(15000);
+  await page.getByRole("button", { name: "课程交接 · 留痕" }).click();
+  await page.waitForTimeout(15000);
+  await page.evaluate(() => scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+  await page.waitForTimeout(8000);
+  return { shown: "course team and handover history" };
+};

@@ -1,12 +1,14 @@
 package org.hanwen.learning.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+
 import java.time.LocalDateTime;
 
 @TableName("quiz_run")
 public class QuizRun {
     @TableId(type = IdType.AUTO)
     public Long id;
+
     public Long quizId;
     public Long courseId;
     public Long chapterId;

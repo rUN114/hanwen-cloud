@@ -1,20 +1,153 @@
-async page => {
- const f=__FIXTURE__,checks=[],errors=[];function check(name,ok){if(!ok)throw Error(name);checks.push({name,result:'PASS'});}page.on('pageerror',e=>errors.push(e.message));
- async function login(x){await page.goto('http://127.0.0.1:5173/login');await page.getByRole('textbox',{name:'账号',exact:true}).fill(x.username);await page.getByRole('textbox',{name:'密码',exact:true}).fill(x.password);await page.getByRole('button',{name:'登录书院',exact:true}).click();await page.waitForURL('**/home');}
- await page.setViewportSize({width:1440,height:1000});await login(f.teacher);await page.goto('http://127.0.0.1:5173/teacher/courses/'+f.courseId+'/assignments');
- const first=f.uiBatchTasks[0].title,second=f.uiBatchTasks[1].title;const select=name=>page.getByRole('checkbox',{name:'选择作业 '+name,exact:true});await page.locator('.batch-task-bar').waitFor();
- for(let i=0;i<15&&!await select(first).count();i++){await page.locator('.el-pagination .btn-next').click();await page.waitForTimeout(350);}
- await select(first).focus();await page.keyboard.press('Space');await select(second).check();check('教师键盘选择两份页内草稿',(await page.locator('.batch-task-bar').innerText()).includes('已选择 2 份'));
- await page.getByRole('button',{name:'批量发布',exact:true}).click();check('确认框列出两份作业名称',(await page.getByRole('dialog').innerText()).includes(first)&&(await page.getByRole('dialog').innerText()).includes(second));
- const response=page.waitForResponse(r=>r.url().endsWith('/api/teacher/assignments/batch')&&r.request().method()==='POST');await page.getByRole('dialog').getByRole('button',{name:'确认批量发布',exact:true}).click();check('页面真实批量发布接口成功',(await response).status()===200);await page.waitForFunction(()=>document.querySelector('.batch-task-bar')?.textContent.includes('已选择 0 份'));
- for(const name of [first,second])check(name+'发布后状态更新',(await page.locator('article.paper').filter({has:page.getByRole('heading',{name,exact:true})}).innerText()).includes('已发布'));
- await select(first).check();await select(second).check();await page.getByRole('button',{name:'批量关闭',exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'确认批量关闭',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.batch-task-bar')?.textContent.includes('已选择 0 份'));check('页面真实批量关闭后清理选择',await select(first).count()===0&&await select(second).count()===0);await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:f.output+'/v6-teacher-batch.png',fullPage:true});
- for(const width of [390,320]){await page.setViewportSize({width,height:900});check(width+'px批量栏无外层横向溢出',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:f.output+'/v6-teacher-batch-'+width+'.png',fullPage:true});}
- await page.setViewportSize({width:1440,height:1000});await page.goto('http://127.0.0.1:5173/inbox');await page.getByRole('button',{name:'全部',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.inbox-update-note')?.textContent.includes('最近成功更新'));let requests=0;const listener=r=>{if(r.url().endsWith('/api/courses/inbox'))requests++;};page.on('request',listener);
- await page.waitForTimeout(31000);check('真实前台30秒定时读取来信',requests===1);const auto=page.getByRole('checkbox',{name:'自动更新来信',exact:true});await auto.uncheck();await page.clock.install();const before=requests;await page.clock.runFor(31000);check('关闭自动更新后不再轮询',requests===before);
- const contents=await page.locator('.letters-list').innerText();await page.route('**/api/courses/inbox',r=>r.abort());await page.getByRole('button',{name:'刷新来信',exact:true}).click();await page.getByText('；更新失败，已保留上次内容。',{exact:true}).waitFor();check('更新失败仍保留上次来信',await page.locator('.letters-list').innerText()===contents);await page.unroute('**/api/courses/inbox');await page.getByRole('button',{name:'刷新来信',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('.inbox-update-note')?.textContent.includes('更新失败'));check('手动重试真实恢复读取',requests===before+2);
- await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:f.output+'/v6-inbox-desktop.png',fullPage:true});await page.setViewportSize({width:320,height:900});check('320px来信无外层横向溢出',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:f.output+'/v6-inbox-320.png',fullPage:true});
- await auto.check();await page.setViewportSize({width:1440,height:1000});await page.getByRole('link',{name:'先生案头',exact:true}).click();await page.waitForURL('**/home');const leaving=requests;await page.clock.runFor(31000);check('离开来信页面清理定时器',requests===leaving);page.off('request',listener);
- await page.setViewportSize({width:1440,height:1000});await login(f.students[0]);await page.goto('http://127.0.0.1:5173/student/review-book');await page.getByRole('combobox',{name:'课程',exact:true}).selectOption(f.courseId);await page.locator('.review-card').first().getByRole('button',{name:'展开题签',exact:true}).click();await page.getByRole('heading',{name:'再读这一题',exact:true}).waitFor();for(const width of [390,320]){await page.setViewportSize({width,height:900});check(width+'px当前温故册无外层横向溢出',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:f.output+'/v6-review-'+width+'.png',fullPage:true});}
- check('批量与来信页面没有运行异常',errors.length===0);return {checks,scope:'Actual UI writes and actual 31-second foreground timer. Disable/unmount checks advance browser clock only; API remains real. Network failure simulated by abort.'};
-}
+async (page) => {
+  const f = __FIXTURE__,
+    checks = [],
+    errors = [];
+  function check(name, ok) {
+    if (!ok) throw Error(name);
+    checks.push({ name, result: "PASS" });
+  }
+  page.on("pageerror", (e) => errors.push(e.message));
+  async function login(x) {
+    await page.goto("http://127.0.0.1:5173/login");
+    await page.getByRole("textbox", { name: "账号", exact: true }).fill(x.username);
+    await page.getByRole("textbox", { name: "密码", exact: true }).fill(x.password);
+    await page.getByRole("button", { name: "登录书院", exact: true }).click();
+    await page.waitForURL("**/home");
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await login(f.teacher);
+  await page.goto("http://127.0.0.1:5173/teacher/courses/" + f.courseId + "/assignments");
+  const first = f.uiBatchTasks[0].title,
+    second = f.uiBatchTasks[1].title;
+  const select = (name) => page.getByRole("checkbox", { name: "选择作业 " + name, exact: true });
+  await page.locator(".batch-task-bar").waitFor();
+  for (let i = 0; i < 15 && !(await select(first).count()); i++) {
+    await page.locator(".el-pagination .btn-next").click();
+    await page.waitForTimeout(350);
+  }
+  await select(first).focus();
+  await page.keyboard.press("Space");
+  await select(second).check();
+  check(
+    "教师键盘选择两份页内草稿",
+    (await page.locator(".batch-task-bar").innerText()).includes("已选择 2 份"),
+  );
+  await page.getByRole("button", { name: "批量发布", exact: true }).click();
+  check(
+    "确认框列出两份作业名称",
+    (await page.getByRole("dialog").innerText()).includes(first) &&
+      (await page.getByRole("dialog").innerText()).includes(second),
+  );
+  const response = page.waitForResponse(
+    (r) => r.url().endsWith("/api/teacher/assignments/batch") && r.request().method() === "POST",
+  );
+  await page.getByRole("dialog").getByRole("button", { name: "确认批量发布", exact: true }).click();
+  check("页面真实批量发布接口成功", (await response).status() === 200);
+  await page.waitForFunction(() =>
+    document.querySelector(".batch-task-bar")?.textContent.includes("已选择 0 份"),
+  );
+  for (const name of [first, second])
+    check(
+      name + "发布后状态更新",
+      (
+        await page
+          .locator("article.paper")
+          .filter({ has: page.getByRole("heading", { name, exact: true }) })
+          .innerText()
+      ).includes("已发布"),
+    );
+  await select(first).check();
+  await select(second).check();
+  await page.getByRole("button", { name: "批量关闭", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "确认批量关闭", exact: true }).click();
+  await page.waitForFunction(() =>
+    document.querySelector(".batch-task-bar")?.textContent.includes("已选择 0 份"),
+  );
+  check(
+    "页面真实批量关闭后清理选择",
+    (await select(first).count()) === 0 && (await select(second).count()) === 0,
+  );
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: f.output + "/v6-teacher-batch.png", fullPage: true });
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    check(
+      width + "px批量栏无外层横向溢出",
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+    );
+    await page.screenshot({
+      path: f.output + "/v6-teacher-batch-" + width + ".png",
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("http://127.0.0.1:5173/inbox");
+  await page.getByRole("button", { name: "全部", exact: true }).click();
+  await page.waitForFunction(() =>
+    document.querySelector(".inbox-update-note")?.textContent.includes("最近成功更新"),
+  );
+  let requests = 0;
+  const listener = (r) => {
+    if (r.url().endsWith("/api/courses/inbox")) requests++;
+  };
+  page.on("request", listener);
+  await page.waitForTimeout(31000);
+  check("真实前台30秒定时读取来信", requests === 1);
+  const auto = page.getByRole("checkbox", { name: "自动更新来信", exact: true });
+  await auto.uncheck();
+  await page.clock.install();
+  const before = requests;
+  await page.clock.runFor(31000);
+  check("关闭自动更新后不再轮询", requests === before);
+  const contents = await page.locator(".letters-list").innerText();
+  await page.route("**/api/courses/inbox", (r) => r.abort());
+  await page.getByRole("button", { name: "刷新来信", exact: true }).click();
+  await page.getByText("；更新失败，已保留上次内容。", { exact: true }).waitFor();
+  check("更新失败仍保留上次来信", (await page.locator(".letters-list").innerText()) === contents);
+  await page.unroute("**/api/courses/inbox");
+  await page.getByRole("button", { name: "刷新来信", exact: true }).click();
+  await page.waitForFunction(
+    () => !document.querySelector(".inbox-update-note")?.textContent.includes("更新失败"),
+  );
+  check("手动重试真实恢复读取", requests === before + 2);
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: f.output + "/v6-inbox-desktop.png", fullPage: true });
+  await page.setViewportSize({ width: 320, height: 900 });
+  check(
+    "320px来信无外层横向溢出",
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+  );
+  await page.screenshot({ path: f.output + "/v6-inbox-320.png", fullPage: true });
+  await auto.check();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("link", { name: "先生案头", exact: true }).click();
+  await page.waitForURL("**/home");
+  const leaving = requests;
+  await page.clock.runFor(31000);
+  check("离开来信页面清理定时器", requests === leaving);
+  page.off("request", listener);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await login(f.students[0]);
+  await page.goto("http://127.0.0.1:5173/student/review-book");
+  await page.getByRole("combobox", { name: "课程", exact: true }).selectOption(f.courseId);
+  await page
+    .locator(".review-card")
+    .first()
+    .getByRole("button", { name: "展开题签", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "再读这一题", exact: true }).waitFor();
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    check(
+      width + "px当前温故册无外层横向溢出",
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+    );
+    await page.screenshot({ path: f.output + "/v6-review-" + width + ".png", fullPage: true });
+  }
+  check("批量与来信页面没有运行异常", errors.length === 0);
+  return {
+    checks,
+    scope:
+      "Actual UI writes and actual 31-second foreground timer. Disable/unmount checks advance browser clock only; API remains real. Network failure simulated by abort.",
+  };
+};

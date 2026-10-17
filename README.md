@@ -2,7 +2,7 @@
 
 [![Build verification](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml/badge.svg)](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml)
 
-个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前首次公开 Git 快照为 **v7.1.0**。
+个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前版本为 **v7.1.1**，已整理代码目录与格式；首次公开 Git 快照为 v7.1.0。
 
 ![书院画卷：米友仁《云山图》及馆藏来源](docs/images/museum-cloud-mountains.jpg)
 
@@ -33,6 +33,8 @@
 
 后端通过 Eureka、Gateway 和 OpenFeign 协作；各业务库使用各自数据库账号。后端用 IDEA 打开 `backend/pom.xml`，前端用 VS Code 打开 `frontend`。
 
+业务服务内部已分为 controller、service、client、config、mapper、model；前端按业务整理页面和组件，统一归档 HTTP、类型、会话和样式。具体目录及格式命令见[代码结构与格式](docs/代码结构与格式.md)。
+
 依赖已在 POM 和 package-lock 中固定：JDK25、Spring Boot4.1.1、Spring Cloud2025.1.3、MyBatis-Plus3.5.17、MySQL9.7；Vue3.5.43、Vue Router5.4.0、Element Plus2.14.7、Vite8.3.4、TypeScript6.0.3。构建使用 Maven3.9 和 Node24。
 
 ## 本机准备与运行
@@ -59,6 +61,7 @@ npm run dev
 mvn -B -ntp -f backend/pom.xml package
 npm ci --prefix frontend
 npm run build --prefix frontend
+npm run format:check --prefix frontend
 node tests/export.test.mjs
 node tests/roster.test.mjs
 node tests/workspace.test.mjs
