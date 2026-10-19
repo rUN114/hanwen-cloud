@@ -2,7 +2,7 @@
 
 [![Build verification](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml/badge.svg)](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml)
 
-个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前版本为 **v7.2.0**，提供六个方向的阅读课程与有出处的诗文内容；首次公开 Git 快照为 v7.1.0。
+个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前版本为 **v7.2.1**，提供六个方向的阅读课程与有出处的诗文内容，并更新底层安全依赖；首次公开 Git 快照为 v7.1.0。
 
 ![书院画卷：米友仁《云山图》及馆藏来源](docs/images/museum-cloud-mountains.jpg)
 
