@@ -128,9 +128,9 @@ function exportWork() {
           v-if="compare && work.translation"
           class="translation-sheet"
         >
-          <h2>译文</h2>
+          <h2>参考译意</h2>
           <p class="plain-text">{{ work.translation }}</p>
-          <small>译文由编选教师录入，请结合版本说明阅读。</small>
+          <small>参考译意由编选者撰写，请结合原文与版本说明阅读。</small>
         </section>
       </div>
       <section
@@ -150,7 +150,7 @@ function exportWork() {
       <p class="plain-text">
         {{ work.readingGuide || "阅读之后，试着用自己的语言解释作品中最打动你的句子。" }}
       </p>
-      <small class="field-hint">阅读提示由项目或编选教师编写。</small>
+      <small class="field-hint">阅读提示由编选者撰写，也欢迎提出有原文依据的不同理解。</small>
       <section
         v-if="work.allusions?.length"
         class="allusion-shelf"

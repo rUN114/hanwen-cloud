@@ -3,28 +3,192 @@
     "title": "静夜思",
     "author": "李白",
     "sourceUrl": "https://zh.wikisource.org/w/index.php?title=靜夜思&oldid=8747585",
-    "sourceNote": "采用页面所列《唐诗三百首》版本，繁体转简体，按诗句分行。",
-    "readingGuide": "项目原创阅读提示，不是古籍注释"
+    "sourceNote": "采用页面“唐诗三百首”版本；该页另列“床前看月光”“举头望山月”等异文。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
   },
   {
     "title": "春晓",
     "author": "孟浩然",
     "sourceUrl": "https://zh.wikisource.org/w/index.php?title=春曉_(孟浩然)&oldid=10374454",
-    "sourceNote": "采用所列“夜来风雨声”版本，繁体转简体，按诗句分行。",
-    "readingGuide": "项目原创阅读提示，不是古籍注释"
+    "sourceNote": "采用“夜来风雨声”版本，保留末句的疑问语气。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "山居秋暝",
+    "author": "王维",
+    "sourceUrl": "https://zh.wikisource.org/wiki/山居秋暝",
+    "sourceNote": "采用页面所列八句正文。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "春望",
+    "author": "杜甫",
+    "sourceUrl": "https://zh.wikisource.org/wiki/春望",
+    "sourceNote": "采用页面所列五言律诗正文。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "望岳",
+    "author": "杜甫",
+    "sourceUrl": "https://zh.wikisource.org/wiki/望嶽",
+    "sourceNote": "选读咏泰山一首；保留“曾云”的古字写法。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "送元二使安西",
+    "author": "王维",
+    "sourceUrl": "https://zh.wikisource.org/wiki/送元二使安西",
+    "sourceNote": "采用“客舍青青柳色新”版本；篇名又作《渭城曲》。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "浣溪沙·一曲新词酒一杯",
+    "author": "晏殊",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=浣溪沙_(晏殊)&oldid=2632163",
+    "sourceNote": "采用以“一曲新词酒一杯”起句的一首，上下片分行。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "水调歌头·明月几时有",
+    "author": "苏轼",
+    "sourceUrl": "https://zh.wikisource.org/wiki/水調歌頭_(明月幾時有)",
+    "sourceNote": "收录小序及正文，按上下片分段。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "定风波·莫听穿林打叶声",
+    "author": "苏轼",
+    "sourceUrl": "https://zh.wikisource.org/wiki/定風波_(莫聽穿林打葉聲)",
+    "sourceNote": "收录小序及正文。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "如梦令·常记溪亭日暮",
+    "author": "李清照",
+    "sourceUrl": "https://zh.wikisource.org/wiki/如夢令_(李清照)/如夢令_(常記溪亭日暮)",
+    "sourceNote": "采用“常记溪亭日暮”一首；保留“争渡”的正文写法。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "声声慢·寻寻觅觅",
+    "author": "李清照",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=聲聲慢_(李清照)&oldid=11094058",
+    "sourceNote": "采用“晚来风急”版本；该处另有“晓来”异文，引用须注明。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "破阵子·为陈同甫赋壮词以寄之",
+    "author": "辛弃疾",
+    "sourceUrl": "https://zh.wikisource.org/w/index.php?title=破陣子_(辛棄疾)&oldid=2501420",
+    "sourceNote": "采用“醉里挑灯看剑”一首；标题说明为寄陈同甫而作。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
   },
   {
     "title": "陋室铭",
     "author": "刘禹锡",
     "sourceUrl": "https://zh.wikisource.org/w/index.php?title=陋室銘&oldid=11122639",
-    "sourceNote": "繁体转简体，保留原文措辞，按阅读节奏分段。",
-    "readingGuide": "项目原创阅读提示，不是古籍注释"
+    "sourceNote": "收录正文；按起兴、居室生活与结语分段。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
   },
   {
     "title": "爱莲说",
     "author": "周敦颐",
     "sourceUrl": "https://zh.wikisource.org/w/index.php?title=愛蓮說&oldid=2676605",
-    "sourceNote": "仅收录正文，不收录页面注释；繁体转简体，保留“盛爱”等页面版本措辞。",
-    "readingGuide": "项目原创阅读提示，不是古籍注释"
+    "sourceNote": "采用“世人盛爱牡丹”版本；只收录正文。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "记承天寺夜游",
+    "author": "苏轼",
+    "sourceUrl": "https://zh.wikisource.org/wiki/記承天寺夜遊",
+    "sourceNote": "收录全文，分为叙事、写景、议论三段。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "湖心亭看雪",
+    "author": "张岱",
+    "sourceUrl": "https://zh.wikisource.org/wiki/湖心亭看雪",
+    "sourceNote": "采用“余拏一小舟”版本；标点按教学阅读需要整理。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "桃花源记（节选）",
+    "author": "陶渊明",
+    "sourceUrl": "https://zh.wikisource.org/wiki/桃花源記",
+    "sourceNote": "仅节选从“林尽水源”至“咸来问讯”，并非全文；完整篇章见来源页。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "岳阳楼记（节选）",
+    "author": "范仲淹",
+    "sourceUrl": "https://zh.wikisource.org/wiki/岳陽樓記",
+    "sourceNote": "节选篇末议论段，自“嗟夫”至“吾谁与归”；前文两种览物之情须另读全文。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "关雎",
+    "author": "佚名",
+    "sourceUrl": "https://zh.wikisource.org/wiki/詩經/關雎",
+    "sourceNote": "选自《诗经·周南》，按五章分行。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "蒹葭",
+    "author": "佚名",
+    "sourceUrl": "https://zh.wikisource.org/wiki/詩經/蒹葭",
+    "sourceNote": "选自《诗经·秦风》，按三章分段。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "论语·学而（选章）",
+    "author": "孔子弟子及再传弟子",
+    "sourceUrl": "https://zh.wikisource.org/wiki/論語/學而第一",
+    "sourceNote": "选取《学而》中的三章，不作为连续原文章节；各章之间以换行区分。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "饮酒·其五",
+    "author": "陶渊明",
+    "sourceUrl": "https://zh.wikisource.org/wiki/飲酒二十首",
+    "sourceNote": "选取《饮酒二十首》第五首，采用“悠然见南山”版本。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "游子吟",
+    "author": "孟郊",
+    "sourceUrl": "https://zh.wikisource.org/wiki/遊子吟",
+    "sourceNote": "采用以“慈母手中线”起句的孟郊作品。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
+  },
+  {
+    "title": "元日",
+    "author": "王安石",
+    "sourceUrl": "https://zh.wikisource.org/wiki/元日_(王安石)",
+    "sourceNote": "采用王安石七言绝句，保留“曈曈”的写法。 繁体转简体，教学标点整理。",
+    "readingGuide": "参考译意、词义提示、导读与练习由本项目编写。",
+    "checkedAt": "2026-10-19"
   }
 ]

@@ -1,6 +1,10 @@
 """Read-only authenticated local mixed-workload test, bounded to a dedicated verification course."""
 import concurrent.futures as cf,datetime as dt,json,time,statistics,urllib.request,urllib.error
 from pathlib import Path
+
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
 ROOT=Path(__file__).resolve().parents[1];BASE='http://127.0.0.1:8088'
 f=json.loads((ROOT/'.local/platform-fixtures.json').read_text());student=f['students'][0]
 def get(path,token=None,body=None):

@@ -9,12 +9,19 @@ import StatePanel from "../../components/common/StatePanel.vue";
 const role = computed(() => session.value!.user.role);
 const summary = ref<Record<string, number>>({});
 const courses = ref<Course[]>([]);
+const discover = ref<Course[]>([]);
 const enrollments = ref<Enrollment[]>([]);
 const pending = ref<Task[]>([]);
 const pendingTotal = ref(0);
 const works = ref<Work[]>([]);
 const inbox = ref<{ id: string; taskTitle: string; studentId: string; submittedAt: string }[]>([]);
 const { busy, error, run } = useTask();
+const mainAction = computed(() => {
+  if (role.value === "ADMIN") return { to: "/admin/users", label: "管理书院" };
+  if (role.value === "TEACHER") return { to: "/teacher/courses", label: "进入我的课程" };
+  if (!summary.value.courses) return { to: "/student/courses", label: "选择课程" };
+  return { to: "/student/enrollments", label: "继续学习" };
+});
 const metrics = computed(() =>
   role.value === "STUDENT"
     ? [
@@ -40,17 +47,19 @@ const metrics = computed(() =>
 function load() {
   run(async () => {
     if (role.value === "STUDENT") {
-      const [s, e, p, w] = await Promise.all([
+      const [s, e, p, w, catalog] = await Promise.all([
         api<Record<string, number>>("/api/enrollments/summary"),
         api<Page<Enrollment>>("/api/enrollments/me?size=5"),
         api<Page<Task>>("/api/assignments/pending?size=5"),
         api<Page<Work>>("/api/literature?size=3"),
+        api<Page<Course>>("/api/courses?size=6"),
       ]);
       summary.value = s;
       enrollments.value = e.items;
       pending.value = p.items;
       pendingTotal.value = p.total;
       works.value = w.items;
+      discover.value = catalog.items;
     } else if (role.value === "TEACHER") {
       const [s, a, c] = await Promise.all([
         api<Record<string, number>>("/api/teacher/courses/summary"),
@@ -82,17 +91,9 @@ onMounted(load);
       </span>
       <h2>{{ session?.user.displayName }}，展卷见字</h2>
       <p>把片刻的领会写进札记，把尚未解开的疑问留给课堂。</p>
-      <RouterLink
-        :to="
-          role === 'ADMIN'
-            ? '/admin/users'
-            : role === 'TEACHER'
-              ? '/teacher/courses'
-              : '/student/enrollments'
-        "
-      >
+      <RouterLink :to="mainAction.to">
         <el-button type="primary">
-          {{ role === "ADMIN" ? "管理书院" : role === "TEACHER" ? "进入我的课程" : "继续学习" }}
+          {{ mainAction.label }}
         </el-button>
       </RouterLink>
     </div>
@@ -169,6 +170,27 @@ onMounted(load);
     class="desk-grid"
   >
     <section
+      v-if="role === 'STUDENT' && !enrollments.length && discover.length"
+      class="paper"
+    >
+      <div class="section-heading">
+        <h2>从一门课程开始</h2>
+        <RouterLink to="/student/courses">浏览课程广场</RouterLink>
+      </div>
+      <p class="muted">先读课程介绍，再选择加入。阅读、练习与习作会在学习后逐步记入你的书案。</p>
+      <article
+        v-for="course in discover"
+        :key="course.id"
+        class="list-line"
+      >
+        <div>
+          <RouterLink :to="'/student/courses/' + course.id">{{ course.name }}</RouterLink>
+          <small>{{ course.category }} · {{ course.teacherName }}</small>
+        </div>
+        <RouterLink :to="'/student/courses/' + course.id">查看课程</RouterLink>
+      </article>
+    </section>
+    <section
       v-if="role === 'STUDENT'"
       class="paper"
     >
@@ -229,7 +251,7 @@ onMounted(load);
       </article>
     </section>
     <section
-      v-if="role !== 'ADMIN'"
+      v-if="role === 'TEACHER' || enrollments.length"
       class="paper"
     >
       <div class="section-heading">

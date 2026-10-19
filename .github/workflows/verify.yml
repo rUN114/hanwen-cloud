@@ -53,3 +53,7 @@ jobs:
           node --test tests/local-demo.test.mjs
       - name: Check local health state transition rules
         run: python3 tests/monitor_test.py
+      - name: Validate reading content and fixture isolation
+        run: |
+          python3 tools/install_academy_content.py --validate
+          python3 tests/content_catalog_test.py

@@ -4,6 +4,10 @@ from http.cookies import SimpleCookie
 from pathlib import Path
 from cryptography.hazmat.primitives import serialization,hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
 ROOT=Path(__file__).resolve().parents[1];PRIVATE=ROOT/'.local';BASE='http://127.0.0.1:8080'
 cfg=json.loads((PRIVATE/'runtime.json').read_text(encoding='utf-8-sig'));accounts=json.loads((PRIVATE/'demo-accounts.json').read_text())
 results=[];stamp=secrets.token_hex(4);fixtures={}

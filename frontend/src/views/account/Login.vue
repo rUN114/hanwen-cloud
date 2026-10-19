@@ -159,9 +159,9 @@ function submit() {
         <section
           v-if="demoAccounts.length"
           class="login-demo"
-          aria-label="本机演示快捷登录"
+          aria-label="本机快捷登录"
         >
-          <p>本机演示 · 免输入账号密码</p>
+          <p>本机快捷登录 · 免输入账号密码</p>
           <div class="login-demo-actions">
             <el-button
               v-for="account in demoAccounts"

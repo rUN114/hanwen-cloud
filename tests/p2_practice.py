@@ -1,6 +1,10 @@
 """Real, isolated P2 API workflow. Does not change existing students' answers or grades."""
 import concurrent.futures,datetime as dt,json,os,secrets,time,urllib.error,urllib.request
 from pathlib import Path
+
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
 ROOT=Path(__file__).resolve().parents[1];PRIVATE=ROOT/'.local'
 BASE=os.environ.get('HW_TEST_BASE','http://127.0.0.1:8088')
 assert BASE in ('http://127.0.0.1:8088','http://127.0.0.1:8080')

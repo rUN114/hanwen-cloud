@@ -1,6 +1,10 @@
 """Real R1 acceptance using fresh isolated teaching fixtures; no original scores are edited."""
 from pathlib import Path
 import datetime as dt,json,os,secrets,urllib.request,urllib.error
+
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
 ROOT=Path(__file__).resolve().parents[1];PRIVATE=ROOT/'.local';BASE=os.environ.get('HW_TEST_BASE','http://127.0.0.1:8088');assert BASE in ('http://127.0.0.1:8088','http://127.0.0.1:8080')
 checks=[]
 def call(path,token=None,body=None,method=None,expected=200):

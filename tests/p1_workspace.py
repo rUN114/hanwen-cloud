@@ -4,6 +4,10 @@ No existing student submissions or completion records are modified.
 import datetime as dt, json, os, secrets, urllib.error, urllib.request
 from pathlib import Path
 
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
+
 ROOT = Path(__file__).resolve().parents[1]
 PRIVATE = ROOT / '.local'
 BASE = os.environ.get('HW_TEST_BASE', 'http://127.0.0.1:8088')

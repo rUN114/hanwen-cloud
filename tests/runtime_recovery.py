@@ -1,6 +1,10 @@
 """Read-only provider outage/recovery exercise. Dedicated local environment only; restarts in finally."""
 from pathlib import Path
 import datetime as dt,json,os,signal,subprocess,time,urllib.request,urllib.error
+
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
 ROOT=Path(__file__).resolve().parents[1];private=ROOT/'.local';f=json.loads((private/'platform-fixtures.json').read_text());cfg=json.loads((private/'runtime.json').read_text(encoding='utf-8-sig'))
 BASE='http://127.0.0.1:8088';events=[]
 def request(path,token=None,body=None):

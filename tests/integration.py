@@ -12,6 +12,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
+
 ROOT = Path(__file__).resolve().parents[1]
 BASE = 'http://127.0.0.1:8080'
 PRIVATE = ROOT / '.local'

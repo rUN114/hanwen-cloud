@@ -1,6 +1,10 @@
 """Read-only final regression against existing isolated validation fixtures. No teaching writes."""
 from pathlib import Path
 import datetime as dt,json,urllib.request,urllib.error
+
+from fixture_guard import require_fixture_environment
+
+require_fixture_environment(Path(__file__).resolve().parents[1])
 R=Path(__file__).resolve().parents[1];f=json.loads((R/'.local/platform-fixtures.json').read_text());accounts=json.loads((R/'.local/demo-accounts.json').read_text());checks=[];BASE='http://127.0.0.1:8088'
 def call(path,token=None,body=None,expected=200):
  h={'Content-Type':'application/json','Origin':'http://127.0.0.1:5173'}

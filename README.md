@@ -2,7 +2,7 @@
 
 [![Build verification](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml/badge.svg)](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml)
 
-个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前版本为 **v7.1.1**，已整理代码目录与格式；首次公开 Git 快照为 v7.1.0。
+个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前版本为 **v7.2.0**，提供六个方向的阅读课程与有出处的诗文内容；首次公开 Git 快照为 v7.1.0。
 
 ![书院画卷：米友仁《云山图》及馆藏来源](docs/images/museum-cloud-mountains.jpg)
 
@@ -16,6 +16,12 @@
 - 学情：知识点统计、班级对照、八周交卷记录、关注名册、截止提醒与定向催交。
 - 书院画卷：六件真实馆藏的出处、作者与年代，原比例长卷、馆藏局部和滚动放大。
 - 本机开发：学生与教师快捷登录，仅限回环地址和开发服务器，正常经过后端鉴权；不提供固定公开密码。
+
+## 阅读内容
+
+课程包括唐诗、宋词、古典散文、经典阅读、文学写作与汉文化专题，共24章、24篇诗文、24份章节练习（48题）、12项习作和6份可下载学习导引。每篇原文注明来源与版本；译意、词义提示、导读和练习由本项目编写。
+
+内容目录不包含虚构选课、成绩、评语或学习进度。学生从课程广场选择加入，学习记录在实际使用后形成。导入方式与内容来源见[课程内容与数据初始化](docs/课程内容与数据初始化.md)。
 
 ## 结构
 
@@ -42,7 +48,7 @@
 1. 安装 JDK25、Maven3.9、Node24 和 MySQL9.7，确认工具在终端可用。
 2. **新空环境**用 `database/hanwen.sql`。Windows 可运行 `scripts/Initialize-Local.ps1`，交互输入数据库管理凭据，创建四库、受限应用账号、RSA密钥和私有 `.local/runtime.json`。该脚本拒绝覆盖已有表或轮换现有环境凭据。先审阅脚本，再在个人开发环境运行。
 3. 在 IDEA 各服务运行配置中，导入 `.local/runtime.json` 的环境变量。先启动 Eureka，再启动四个业务服务，最后 Gateway。需要演示负载均衡时，以 `--server.port=8105` 再运行一个课程实例。Gateway 本机可设置 `--server.port=8088`。
-4. 启动前端，代理地址必须与 Gateway 一致。例如 PowerShell：
+4. 启动前端，本机开发默认代理到8088，可用 `HW_GATEWAY_URL` 显式调整。代理地址必须与 Gateway 一致。例如 PowerShell：
 
 ```powershell
 $env:HW_GATEWAY_URL = 'http://127.0.0.1:8088'
@@ -68,10 +74,12 @@ node tests/workspace.test.mjs
 node tests/revision-diff.test.mjs
 node --test tests/local-demo.test.mjs
 python tests/monitor_test.py
+python tools/install_academy_content.py --validate
+python tests/content_catalog_test.py
 python tools/check_publication.py
 ```
 
-GitHub Actions 自动执行构建、JUnit、前端逻辑和发布内容检查。`tests` 下的真实 API、数据库恢复及浏览器流程检查需要独立本机环境，部分脚本会创建明确命名的测试数据，不能在真实教学环境中直接执行。构建或模拟检查成功不代表公网生产验收通过。
+GitHub Actions 自动执行构建、JUnit、前端逻辑、课程内容及发布内容检查。`tests` 下的真实 API、数据库恢复及浏览器流程检查需要独立本机环境，部分脚本会创建明确命名的测试数据。安装阅读课程后，这些写入脚本会由本机内容标记阻止运行；测试应使用独立检出、独立私有配置和隔离数据库，不能通过删除标记绕过保护。构建或模拟检查成功不代表公网生产验收通过。
 
 ## Git、版本与公开范围
 

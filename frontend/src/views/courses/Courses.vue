@@ -161,7 +161,17 @@ function cover(c: Course) {
         clearable
       >
         <el-option
-          v-for="c in ['古代文学', '现代文学', '文学理论']"
+          v-for="c in [
+            '唐诗研读',
+            '宋词研读',
+            '古典散文',
+            '经典阅读',
+            '阅读写作',
+            '汉文化专题',
+            '古代文学',
+            '现代文学',
+            '文学理论',
+          ]"
           :key="c"
           :label="c"
           :value="c"
@@ -273,7 +283,6 @@ function cover(c: Course) {
             <RouterLink :to="'/teacher/courses/' + c.id + '/team'">
               <el-button>共教名录</el-button>
             </RouterLink>
-            >
             <RouterLink :to="'/courses/' + c.id + '/resources'">
               <el-button>资源</el-button>
             </RouterLink>

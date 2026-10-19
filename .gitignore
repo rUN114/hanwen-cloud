@@ -24,6 +24,7 @@ __pycache__/
 !/docs/诗文来源.json
 !/docs/版本管理.md
 !/docs/代码结构与格式.md
+!/docs/课程内容与数据初始化.md
 !/docs/images/
 **/.env
 **/.env.*
