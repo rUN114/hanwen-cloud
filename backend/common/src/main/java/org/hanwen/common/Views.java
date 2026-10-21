@@ -1,6 +1,7 @@
 package org.hanwen.common;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.util.*;
 
@@ -14,7 +15,7 @@ public final class Views {
     private static Object value(Object v) {
         if (v instanceof Long l) return l.toString();
         if (v instanceof LocalDateTime t) return t.atOffset(ZoneOffset.ofHours(8)).toString();
-        if (v instanceof BigDecimal n) return n.setScale(2).toPlainString();
+        if (v instanceof BigDecimal n) return n.setScale(2, RoundingMode.HALF_UP).toPlainString();
         return v;
     }
 
