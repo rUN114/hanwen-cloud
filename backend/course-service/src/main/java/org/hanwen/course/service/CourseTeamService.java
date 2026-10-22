@@ -217,8 +217,11 @@ public class CourseTeamService {
     public Object transfer(long id, Transfer in) {
         var c = course.locked(id);
         check(c, in.expectedVersion());
-        if (in.targetId() == null || in.retainPrevious() == null || in.targetId() == c.teacherId)
+        if (in.targetId() == null
+                || in.retainPrevious() == null
+                || in.targetId().equals(c.teacherId)) {
             throw ApiException.bad("请选择交接教师与原主讲安排");
+        }
         var m = member(id, in.targetId());
         if (m == null || !m.status.equals("ACTIVE") || !m.role.equals("CO_TEACHER"))
             throw ApiException.bad("须交接给当前协同教师");

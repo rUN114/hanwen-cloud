@@ -1,6 +1,7 @@
 package org.hanwen.gateway;
 
 import org.hanwen.common.*;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.*;
 import org.springframework.core.Ordered;
@@ -32,7 +33,9 @@ public class GatewayAuthentication implements GlobalFilter, Ordered {
         return -100;
     }
 
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    @Override
+    public @NonNull Mono<Void> filter(
+            @NonNull ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
         String trace = UUID.randomUUID().toString();
         var request =
                 exchange.getRequest()
