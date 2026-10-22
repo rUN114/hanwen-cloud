@@ -60,7 +60,7 @@ public final class Views {
             BigDecimal n = new BigDecimal(s);
             if (n.compareTo(max) > 0 || n.signum() < (positive ? 1 : 0))
                 throw new IllegalArgumentException();
-            return n.setScale(2);
+            return n.setScale(2, RoundingMode.UNNECESSARY);
         } catch (Exception e) {
             throw ApiException.bad("分数须在允许范围内，最多两位小数");
         }

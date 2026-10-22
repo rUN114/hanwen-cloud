@@ -47,10 +47,12 @@ public class JwtCodec {
         try {
             if (auth == null || !auth.startsWith("Bearer ")) throw new IllegalArgumentException();
             Jwt j = decoder.decode(auth.substring(7));
+            String subject = j.getSubject();
+            if (subject == null || !(j.getClaim("ver") instanceof Number version)) {
+                throw new IllegalArgumentException("缺少有效的身份编号或版本");
+            }
             return new Actor(
-                    Long.parseLong(j.getSubject()),
-                    j.getClaimAsString("role"),
-                    ((Number) j.getClaim("ver")).intValue());
+                    Long.parseLong(subject), j.getClaimAsString("role"), version.intValue());
         } catch (Exception e) {
             throw new ApiException(401, "AUTH_INVALID", "登录已失效，请重新登录");
         }

@@ -8,6 +8,7 @@ import org.hanwen.learning.mapper.*;
 import org.hanwen.learning.model.*;
 import org.springframework.stereotype.Service;
 
+import java.math.RoundingMode;
 import java.time.*;
 import java.util.*;
 
@@ -47,20 +48,24 @@ public class InsightsService {
 
     static Map<String, Object> safe(Map<String, Object> row) {
         var out = new LinkedHashMap<String, Object>();
-        row.forEach(
-                (k, v) ->
-                        out.put(
-                                k,
-                                k.endsWith("Id") && v != null
-                                        ? v.toString()
-                                        : date(v) != null
-                                                ? date(v).atOffset(ZoneOffset.ofHours(8)).toString()
-                                                : v instanceof java.math.BigDecimal b
-                                                        ? (k.endsWith("Percent")
-                                                                        || k.equals("percent")
-                                                                ? b.setScale(2).toPlainString()
-                                                                : b.longValueExact())
-                                                        : v));
+        for (var entry : row.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            LocalDateTime time = date(value);
+            if (key.endsWith("Id") && value != null) {
+                value = value.toString();
+            } else if (time != null) {
+                value = time.atOffset(ZoneOffset.ofHours(8)).toString();
+            } else if (value instanceof java.math.BigDecimal decimal) {
+                if (key.endsWith("Percent") || key.equals("percent")) {
+                    // Percentage queries already use ROUND(..., 2).
+                    value = decimal.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
+                } else {
+                    value = decimal.longValueExact();
+                }
+            }
+            out.put(key, value);
+        }
         return out;
     }
 

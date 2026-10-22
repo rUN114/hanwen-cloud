@@ -8,6 +8,7 @@ import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
 
+import java.math.RoundingMode;
 import java.util.*;
 
 @Service
@@ -39,7 +40,9 @@ public class AnalyticsService {
         for (var e : input.entrySet()) {
             Object v = e.getValue();
             if (e.getKey().equals("id") || e.getKey().endsWith("Id")) v = v.toString();
-            if (v instanceof java.math.BigDecimal b) v = b.setScale(2).toPlainString();
+            // Mapper queries round aggregates to two decimals; score columns already have scale 2.
+            if (v instanceof java.math.BigDecimal b)
+                v = b.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
             if (v instanceof java.time.LocalDateTime t)
                 v = t.atOffset(java.time.ZoneOffset.ofHours(8)).toString();
             if (v instanceof java.sql.Timestamp t)
@@ -76,7 +79,7 @@ public class AnalyticsService {
     public Object pending(int page, int size) {
         Views.role("STUDENT");
         int offset = Views.offset(page, size);
-        var ids = remote.call("pending-enrollments", () -> learning.activeCourses());
+        var ids = remote.call("pending-enrollments", learning::activeCourses);
         if (ids.isEmpty()) return Views.page(List.of(), page, size, 0);
         var done =
                 submissions

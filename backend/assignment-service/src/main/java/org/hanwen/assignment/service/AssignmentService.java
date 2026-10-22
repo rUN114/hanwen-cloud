@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Service
@@ -397,7 +398,7 @@ public class AssignmentService {
                 Names.read(List.of(s.studentId), directory, remote)
                         .getOrDefault(s.studentId, "学生"));
         v.put("taskTitle", t.title);
-        v.put("maxScore", t.maxScore.setScale(2).toPlainString());
+        v.put("maxScore", t.maxScore.setScale(2, RoundingMode.UNNECESSARY).toPlainString());
         v.put("grade", gradeView(grade(s.id), s.version));
         v.put("rubric", Rubrics.read(t.rubricJson));
         v.put("courseId", t.courseId.toString());

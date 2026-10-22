@@ -188,7 +188,7 @@ public class UserService {
         }
         if (users.selectCount(new QueryWrapper<User>().in("username", seen)) > 0)
             throw ApiException.conflict("名单中有已存在的账号，请核对后整批重试");
-        var result = new ArrayList<Object>();
+        var result = new ArrayList<>();
         for (var row : checked) {
             // Start with letters so CSV formula protection never changes a generated password.
             String initial = "Hw" + RefreshService.randomToken().substring(0, 20) + "9!";

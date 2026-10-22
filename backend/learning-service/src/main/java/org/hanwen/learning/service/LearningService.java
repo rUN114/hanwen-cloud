@@ -200,6 +200,6 @@ public class LearningService {
 
     public Object diagnostic() {
         Views.role("TEACHER");
-        return remote.call("course-instance", () -> course.instance());
+        return remote.call("course-instance", course::instance);
     }
 }

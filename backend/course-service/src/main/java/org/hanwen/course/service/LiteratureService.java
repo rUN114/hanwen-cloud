@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.hanwen.common.*;
 import org.hanwen.course.mapper.WorkMapper;
 import org.hanwen.course.model.Work;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class LiteratureService {
             Integer expectedVersion,
             String translation,
             String annotationsText,
-            List<Allusion> allusions) {}
+            List<@Nullable Allusion> allusions) {}
 
     public record Allusion(String term, String explanation, Long workId, String sourceUrl) {}
 
@@ -150,7 +151,7 @@ public class LiteratureService {
         }
         w.translation = Views.optional(in.translation(), 20000, "译文");
         w.annotationsText = Views.optional(in.annotationsText(), 10000, "注释");
-        var allusions = in.allusions() == null ? List.<Allusion>of() : in.allusions();
+        List<@Nullable Allusion> allusions = in.allusions() == null ? List.of() : in.allusions();
         if (allusions.size() > 20) throw ApiException.bad("典故最多20项");
         var checked = new ArrayList<Allusion>();
         for (var x : allusions) {
