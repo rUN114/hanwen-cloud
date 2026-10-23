@@ -13,7 +13,7 @@ qd=it.call('/api/teacher/quizzes/'+q['id']+'/questions',t,body={'prompt':'应如
 it.call('/api/teacher/quizzes/'+q['id']+'/status',t,'PUT',{'status':'PUBLISHED','expectedVersion':1})
 annotation={'enrollmentId':e['id'],'chapterId':h['id'],'startOffset':0,'endOffset':4,'quoteText':h['content'][:4],'comment':'恢复验证','color':'RED'}
 answers={'answers':[{'questionId':qd['questions'][0]['id'],'choice':'A'}]}
-mysql=Path('C:/Program Files/MySQL/MySQL Server 9.7/bin/mysql.exe')
+mysql=Path('C:/Program Files/MySQL/MySQL Server 9.7.4/bin/mysql.exe')
 def count(table,column,identity):
  assert identity.isdigit()
  p=subprocess.run([str(mysql),'--defaults-file='+str(it.PRIVATE/'backup-client.ini'),'--batch','--skip-column-names','--execute='+f'SELECT COUNT(*) FROM hw_learning.{table} WHERE {column}={identity};'],capture_output=True)

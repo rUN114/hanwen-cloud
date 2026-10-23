@@ -1,4 +1,4 @@
-param([string]$RootCredentialPath,[string]$Python='python',[string]$MySqlDirectory='C:\Program Files\MySQL\MySQL Server 9.7\bin')
+param([string]$RootCredentialPath,[string]$Python='python',[string]$MySqlDirectory='C:\Program Files\MySQL\MySQL Server 9.7.4\bin')
 $ErrorActionPreference='Stop'
 $taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $taskLocal=Join-Path $taskRoot '.local'

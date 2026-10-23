@@ -10,7 +10,7 @@ it.record('V2-S01','只有诗文编选记录的教师也不能跨角色转换',l
 it.call('/api/teacher/literature/'+w['id']+'/status',ut,'PUT',{'status':'ARCHIVED','expectedVersion':0})
 it.record('V2-S02','收藏内部元信息接口无法从Gateway或无内部密钥直连访问',lambda:(it.request('/internal/literature/briefs?ids=1',student,expected=404),it.request('/internal/literature/briefs?ids=1',student,expected=403,base='http://127.0.0.1:8102')))
 it.record('V2-S03','课程双实例提供者负载均衡仍返回两个真实端口',lambda:it.check({it.get('/api/teacher/diagnostics/course-instance',teacher)['port'] for _ in range(8)}=={8102,8105}))
-mysql=Path('C:/Program Files/MySQL/MySQL Server 9.7/bin/mysql.exe');defaults='--defaults-file='+str(it.PRIVATE/'backup-client.ini')
+mysql=Path('C:/Program Files/MySQL/MySQL Server 9.7.4/bin/mysql.exe');defaults='--defaults-file='+str(it.PRIVATE/'backup-client.ini')
 def query(sql):
  p=subprocess.run([str(mysql),defaults,'--batch','--skip-column-names','--execute='+sql],capture_output=True)
  if p.returncode:raise RuntimeError('Database verification failed')

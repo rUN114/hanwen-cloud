@@ -29,7 +29,7 @@ def cookie(headers):
  c=SimpleCookie();c.load(headers['Set-Cookie']);return c['hw_refresh'].value
 
 def sql(query):
- out=subprocess.run(['C:/Program Files/MySQL/MySQL Server 9.7/bin/mysql.exe','--defaults-file='+str(PRIVATE/'backup-client.ini'),'--batch','--skip-column-names','--execute='+query],capture_output=True,check=True)
+ out=subprocess.run(['C:/Program Files/MySQL/MySQL Server 9.7.4/bin/mysql.exe','--defaults-file='+str(PRIVATE/'backup-client.ini'),'--batch','--skip-column-names','--execute='+query],capture_output=True,check=True)
  return out.stdout.decode().strip()
 
 def check(n,label,fn):

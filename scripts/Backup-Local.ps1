@@ -1,4 +1,4 @@
-param([string]$RootCredentialPath,[string]$DbHost='127.0.0.1',[int]$DbPort=3307,[string]$MySqlDirectory='C:\Program Files\MySQL\MySQL Server 9.7\bin',[string]$Python='python')
+param([string]$RootCredentialPath,[string]$DbHost='127.0.0.1',[int]$DbPort=3307,[string]$MySqlDirectory='C:\Program Files\MySQL\MySQL Server 9.7.4\bin',[string]$Python='python')
 $ErrorActionPreference='Stop'
 $taskRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $taskLocal=Join-Path $taskRoot '.local'
