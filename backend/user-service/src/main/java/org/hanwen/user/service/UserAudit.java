@@ -1,6 +1,7 @@
 package org.hanwen.user.service;
 
 import org.hanwen.common.*;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -52,10 +53,10 @@ public class UserAudit {
                                         r.getTimestamp("created_at").toLocalDateTime()),
                         size,
                         offset);
-        return Views.page(
-                rows,
-                page,
-                size,
-                db.queryForObject("SELECT COUNT(*) FROM user_audit_event", Long.class));
+        Long total = db.queryForObject("SELECT COUNT(*) FROM user_audit_event", Long.class);
+        if (total == null) {
+            throw new DataRetrievalFailureException("审计记录总数查询未返回计数");
+        }
+        return Views.page(rows, page, size, total);
     }
 }

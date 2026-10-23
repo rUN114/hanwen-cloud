@@ -9,7 +9,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableFeignClients(basePackages = {"org.hanwen.common", "org.hanwen.assignment"})
 @MapperScan("org.hanwen.assignment.mapper")
 public class Application {
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 }

@@ -31,16 +31,26 @@ public final class GradeRules {
         }
         var a = mean(groups.get("ASSIGNMENT"));
         var p = mean(groups.get("PRACTICE"));
-        BigDecimal preview = null;
-        if ((weight == 0 || a != null) && (weight == 100 || p != null))
-            preview =
-                    (a == null ? BigDecimal.ZERO : a.multiply(BigDecimal.valueOf(weight)))
-                            .add(
-                                    p == null
-                                            ? BigDecimal.ZERO
-                                            : p.multiply(BigDecimal.valueOf(100 - weight)))
-                            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal preview = weightedPreview(a, p, weight);
         return new Result(a, p, preview, pending == 0 ? preview : null, pending, missing);
+    }
+
+    private static BigDecimal weightedPreview(
+            BigDecimal assignment, BigDecimal practice, int assignmentWeight) {
+        if (assignmentWeight > 0 && assignment == null) return null;
+        int practiceWeight = 100 - assignmentWeight;
+        if (practiceWeight > 0 && practice == null) return null;
+
+        BigDecimal weightedTotal = BigDecimal.ZERO;
+        if (assignment != null) {
+            weightedTotal =
+                    weightedTotal.add(assignment.multiply(BigDecimal.valueOf(assignmentWeight)));
+        }
+        if (practice != null) {
+            weightedTotal =
+                    weightedTotal.add(practice.multiply(BigDecimal.valueOf(practiceWeight)));
+        }
+        return weightedTotal.divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     }
 
     static BigDecimal mean(List<BigDecimal> values) {

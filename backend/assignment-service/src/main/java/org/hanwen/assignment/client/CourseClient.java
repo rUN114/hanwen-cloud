@@ -12,14 +12,13 @@ public interface CourseClient {
     java.util.List<Long> staffIds(@RequestParam("teachOnly") boolean teachOnly);
 
     @GetMapping("/internal/courses/{id}/validation")
-    Contracts.CourseValidation course(@PathVariable("id") long id);
+    Contracts.CourseValidation course(@PathVariable long id);
 
     @GetMapping("/internal/courses/{id}/chapters/{chapterId}/validation")
-    Contracts.ChapterValidation chapter(
-            @PathVariable("id") long id, @PathVariable("chapterId") long chapterId);
+    Contracts.ChapterValidation chapter(@PathVariable long id, @PathVariable long chapterId);
 
     @GetMapping("/internal/courses/{id}/grade-quizzes")
-    java.util.List<Contracts.QuizBrief> quizzes(@PathVariable("id") long id);
+    java.util.List<Contracts.QuizBrief> quizzes(@PathVariable long id);
 
     @GetMapping("/internal/instance")
     Map<String, Object> instance();

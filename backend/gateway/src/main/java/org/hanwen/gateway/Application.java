@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @SpringBootApplication
 public class Application {
-    public static void main(String[] a) {
+    static void main(String[] a) {
         SpringApplication.run(Application.class, a);
     }
 
