@@ -6,5 +6,5 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(name = "hw-user-service", contextId = "auth-state")
 public interface InternalUserClient {
     @GetMapping("/internal/users/{id}/auth-state")
-    Contracts.AuthState auth(@PathVariable("id") long id);
+    Contracts.AuthState auth(@PathVariable long id);
 }

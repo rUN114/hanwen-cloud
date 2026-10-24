@@ -122,7 +122,7 @@ public class CourseTeamService {
                     ids.add(e.targetId);
                 });
         var names = Names.read(new ArrayList<>(ids), directory, remote);
-        var items = new ArrayList<Object>();
+        var items = new ArrayList<>();
         items.add(
                 Views.map(
                         "userId",

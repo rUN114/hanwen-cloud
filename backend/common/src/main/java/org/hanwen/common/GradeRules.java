@@ -32,11 +32,13 @@ public final class GradeRules {
         var a = mean(groups.get("ASSIGNMENT"));
         var p = mean(groups.get("PRACTICE"));
         BigDecimal preview = weightedPreview(a, p, weight);
+        // 尚有计入总评的项目未完成时，只给预估分，不发布最终总评。
         return new Result(a, p, preview, pending == 0 ? preview : null, pending, missing);
     }
 
     private static BigDecimal weightedPreview(
             BigDecimal assignment, BigDecimal practice, int assignmentWeight) {
+        // 权重为零的一类可以没有成绩，其余类别缺分时不能用零补齐。
         if (assignmentWeight > 0 && assignment == null) return null;
         int practiceWeight = 100 - assignmentWeight;
         if (practiceWeight > 0 && practice == null) return null;

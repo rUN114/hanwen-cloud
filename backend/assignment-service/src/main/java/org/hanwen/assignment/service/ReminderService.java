@@ -98,7 +98,7 @@ public class ReminderService {
                                 "reminder-courses",
                                 () -> assignmentService.learning().activeCourses());
         if (ids.isEmpty()) return Views.map("items", List.of(), "hasMore", false);
-        var output = new ArrayList<Object>();
+        var output = new ArrayList<>();
         var due =
                 assignmentService
                         .tasks()

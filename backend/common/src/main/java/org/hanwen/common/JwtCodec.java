@@ -28,8 +28,7 @@ public class JwtCodec {
                         .signatureAlgorithm(SignatureAlgorithm.RS256)
                         .build();
         var audience =
-                new JwtClaimValidator<List<String>>(
-                        "aud", a -> a != null && a.contains("hanwen-services"));
+                new JwtClaimValidator<List<String>>("aud", a -> a.contains("hanwen-services"));
         decoder.setJwtValidator(
                 new DelegatingOAuth2TokenValidator<>(
                         JwtValidators.createDefaultWithIssuer("hanwen-user"), audience));
@@ -76,6 +75,7 @@ public class JwtCodec {
                                                 .privateKey(key)
                                                 .build())));
         Instant now = Instant.now();
+        // 续期不能突破本次登录的总时限，即使新令牌通常可用十五分钟。
         Instant expiry = deadline.isBefore(now.plusSeconds(900)) ? deadline : now.plusSeconds(900);
         if (!expiry.isAfter(now)) throw new ApiException(401, "SESSION_EXPIRED", "本次入院已到期，请重新登录");
         var claims =

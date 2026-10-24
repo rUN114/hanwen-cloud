@@ -1,6 +1,7 @@
 export function revisionDiff(before: string, after: string) {
   const a = before.split("\n");
   const b = after.split("\n");
+  // 仅标出首尾相同行之间的改动范围，不做逐行匹配；中间未变的行也可能被高亮。
   let prefix = 0;
   let suffix = 0;
   while (prefix < Math.min(a.length, b.length) && a[prefix] === b[prefix]) prefix++;

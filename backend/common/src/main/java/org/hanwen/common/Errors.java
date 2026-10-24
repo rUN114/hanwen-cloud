@@ -18,12 +18,12 @@ public class Errors {
         HttpMessageNotReadableException.class,
         MethodArgumentTypeMismatchException.class
     })
-    ResponseEntity<ApiResponse<Object>> input(Exception e) {
+    ResponseEntity<ApiResponse<Object>> input() {
         return api(ApiException.bad("输入格式错误，或包含不允许的字段"));
     }
 
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
-    ResponseEntity<ApiResponse<Object>> upload(Exception e) {
+    ResponseEntity<ApiResponse<Object>> upload() {
         return ResponseEntity.status(413)
                 .body(new ApiResponse<>("UPLOAD_TOO_LARGE", "文件不能超过20MB", null, Trace.id()));
     }
@@ -32,17 +32,17 @@ public class Errors {
         org.springframework.web.bind.MissingServletRequestParameterException.class,
         org.springframework.web.multipart.support.MissingServletRequestPartException.class
     })
-    ResponseEntity<ApiResponse<Object>> missingInput(Exception e) {
+    ResponseEntity<ApiResponse<Object>> missingInput() {
         return api(ApiException.bad("缺少必填字段或文件"));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    ResponseEntity<ApiResponse<Object>> duplicate(Exception e) {
+    ResponseEntity<ApiResponse<Object>> duplicate() {
         return api(new ApiException(409, "DUPLICATE", "数据已存在，或不满足完整性约束"));
     }
 
     @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
-    ResponseEntity<ApiResponse<Object>> notFound(Exception e) {
+    ResponseEntity<ApiResponse<Object>> notFound() {
         return api(ApiException.missing());
     }
 
@@ -58,7 +58,7 @@ public class Errors {
     }
 
     @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
-    ResponseEntity<ApiResponse<Object>> media(Exception e) {
+    ResponseEntity<ApiResponse<Object>> media() {
         return api(new ApiException(415, "UNSUPPORTED_MEDIA_TYPE", "请按接口要求提交文件或JSON数据"));
     }
 

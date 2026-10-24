@@ -108,11 +108,12 @@ public class UserService {
                         && bcrypt.matches(raw, u == null ? dummyHash : u.passwordHash);
         if (u == null || !matched || !u.status.equals("ENABLED")) {
             synchronized (attempts) {
-                var a = attempts.get(key);
-                attempts.put(
+                attempts.compute(
                         key,
-                        new Attempt(
-                                a == null || a.expires() < now ? 1 : a.count() + 1, now + 300000));
+                        (_, a) ->
+                                new Attempt(
+                                        a == null || a.expires() < now ? 1 : a.count() + 1,
+                                        now + 300000));
             }
             throw new ApiException(401, "AUTH_INVALID", "账号或密码不正确");
         }

@@ -83,7 +83,7 @@ public class GradebookService {
                 || !Set.of("ZERO", "EXCLUDE").contains(String.valueOf(in.missingRule()))
                 || !Set.of("HIGHEST", "LATEST").contains(String.valueOf(in.attemptRule())))
             throw ApiException.bad("总评规则不合法");
-        // Lock a local row shared with assignment creation to serialize the first policy insert.
+        // 首次保存还没有规则行可锁，先锁课程下的作业行，协调与作业创建的并发写入。
         var rows =
                 assignment
                         .tasks()
@@ -134,7 +134,7 @@ public class GradebookService {
         if (submitted.size() > 250000) throw ApiException.bad("成绩数据超过处理上限");
         var gids = submitted.stream().map(s -> s.id).toList();
         var grades = new HashMap<Long, Grade>();
-        // Bounded batches avoid oversized SQL IN lists for large classes.
+        // 每批查 500 个提交，避免大班级生成过长的 SQL IN 条件。
         for (int i = 0; i < gids.size(); i += 500)
             for (var g :
                     assignment
@@ -149,7 +149,7 @@ public class GradebookService {
         var submap = new HashMap<String, Submission>();
         for (var s : submitted) submap.put(s.studentId + ":" + s.assignmentId, s);
         var names = Names.read(feed.students(), assignment.directory(), assignment.remote());
-        var output = new ArrayList<Object>();
+        var output = new ArrayList<>();
         for (var student : feed.students()) {
             var items = new ArrayList<GradeRules.Item>();
             for (var t : tasks) {

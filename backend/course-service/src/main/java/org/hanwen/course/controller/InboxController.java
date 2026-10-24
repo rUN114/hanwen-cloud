@@ -27,7 +27,7 @@ public class InboxController {
         List<List<Map<String, Object>>> groups = new ArrayList<>();
         if (teacher) groups.add(inbox.questions(a.id()));
         else {
-            var ids = remote.call("inbox-enrollments", () -> learning.activeCourses());
+            var ids = remote.call("inbox-enrollments", learning::activeCourses);
             if (!ids.isEmpty()) groups.add(inbox.notices(ids));
         }
         groups.add(inbox.replies(a.id(), teacher));

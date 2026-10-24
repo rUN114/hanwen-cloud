@@ -37,9 +37,7 @@ public final class DocumentRules {
 
     public static List<Long> resources(String input) {
         if (input == null) return List.of();
-        var m =
-                Pattern.compile("!\\[[^\\]\\r\\n]*\\]\\(resource:([1-9][0-9]{0,18})\\)")
-                        .matcher(input);
+        var m = Pattern.compile("!\\[[^]\\r\\n]*]\\(resource:([1-9][0-9]{0,18})\\)").matcher(input);
         var ids = new HashSet<Long>();
         while (m.find()) {
             try {

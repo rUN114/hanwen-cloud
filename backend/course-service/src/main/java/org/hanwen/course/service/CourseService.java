@@ -9,6 +9,8 @@ import org.hanwen.course.model.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
+
 @Service
 public class CourseService {
     final CourseMapper courses;
@@ -102,7 +104,7 @@ public class CourseService {
                         new QueryWrapper<Course>()
                                 .eq("teacher_id", Actor.current().id())
                                 .last("LIMIT 1001"));
-        var ids = new java.util.LinkedHashSet<Long>(delegated);
+        var ids = new LinkedHashSet<>(delegated);
         owned.forEach(c -> ids.add(c.id));
         if (ids.size() > 1000 || delegated.size() > 1000 || owned.size() > 1000)
             throw ApiException.bad("协作课程超过1000项，请分账号管理");

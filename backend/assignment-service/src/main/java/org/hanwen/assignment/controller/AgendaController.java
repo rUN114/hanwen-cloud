@@ -52,7 +52,7 @@ public class AgendaController {
             q.in("course_id", ids);
         } else {
             Views.role("STUDENT");
-            var ids = remote.call("agenda-enrollment", () -> learning.activeCourses());
+            var ids = remote.call("agenda-enrollment", learning::activeCourses);
             if (ids.isEmpty())
                 return ApiResponse.ok(Views.map("items", List.of(), "hasMore", false));
             q.in("course_id", ids);

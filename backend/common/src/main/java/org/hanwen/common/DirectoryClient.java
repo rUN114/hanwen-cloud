@@ -12,7 +12,7 @@ public interface DirectoryClient {
             @RequestBody java.util.List<String> usernames);
 
     @GetMapping("/internal/users/teachers/{id}")
-    Contracts.StudentAccount teacher(@PathVariable("id") long id);
+    Contracts.StudentAccount teacher(@PathVariable long id);
 
     @PostMapping("/internal/users/teachers-by-username")
     java.util.List<Contracts.StudentAccount> teachers(

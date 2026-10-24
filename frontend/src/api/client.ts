@@ -15,6 +15,7 @@ export class ApiError extends Error {
     super(message);
   }
 }
+// 同一页面的并发请求共用一次续期，避免轮换后的旧刷新令牌被重复使用。
 let renewal: Promise<void> | null = null;
 export async function renewSession(): Promise<void> {
   if (renewal) return renewal;
@@ -43,6 +44,7 @@ export async function renewSession(): Promise<void> {
         result.traceId || "",
       );
     }
+    // 等待续期时可能已经退出或切换账号，旧响应不能覆盖新的登录身份。
     const next = result.data as Session;
     if (
       !next?.accessToken ||
@@ -87,6 +89,7 @@ async function request(
     const token = session.value?.accessToken;
     let response = await send();
     if (response.status === 401 && auth) {
+      // 其他请求已换好令牌时直接重发，避免再次续期。
       if (token === session.value?.accessToken) await renewSession();
       response = await send();
       if (response.status === 401) expireSession();

@@ -116,7 +116,7 @@ public class InsightsService {
                         rows.stream().map(r -> number(r.get("studentId"))).toList(),
                         directory,
                         remote);
-        var learners = new ArrayList<Object>();
+        var learners = new ArrayList<>();
         var now = Views.now();
         for (var r : rows) {
             long student = number(r.get("studentId"));
@@ -147,7 +147,7 @@ public class InsightsService {
             v.put("inactive14Days", last != null && last.isBefore(now.minusDays(14)));
             learners.add(v);
         }
-        var comparison = new ArrayList<Object>();
+        var comparison = new ArrayList<>();
         for (var room : roomsList) {
             var ids =
                     ms.stream()

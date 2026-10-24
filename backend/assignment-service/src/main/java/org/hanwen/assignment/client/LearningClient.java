@@ -11,7 +11,7 @@ public interface LearningClient {
             @RequestParam("courseId") long courseId, @RequestParam("studentId") long studentId);
 
     @GetMapping("/internal/courses/{id}/grade-feed")
-    Contracts.GradeFeed grades(@PathVariable("id") long id);
+    Contracts.GradeFeed grades(@PathVariable long id);
 
     @GetMapping("/internal/enrollments/me/active-course-ids")
     java.util.List<Long> activeCourses();

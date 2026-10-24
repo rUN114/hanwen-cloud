@@ -42,6 +42,7 @@ public class GatewayAuthentication implements GlobalFilter, Ordered {
                         .mutate()
                         .headers(
                                 h -> {
+                                    // 外部请求不能自带内部身份或服务密钥，追踪号也由网关重新生成。
                                     for (String n :
                                             new String[] {
                                                 "X-User-Id",
@@ -81,7 +82,7 @@ public class GatewayAuthentication implements GlobalFilter, Ordered {
                                         trace);
                             return chain.filter(clean);
                         })
-                .onErrorResume(e -> error(clean, ApiException.unavailable(), trace));
+                .onErrorResume(_ -> error(clean, ApiException.unavailable(), trace));
     }
 
     private Mono<Void> error(ServerWebExchange x, ApiException e, String trace) {

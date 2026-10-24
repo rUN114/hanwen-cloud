@@ -9,25 +9,22 @@ import java.util.Map;
 @FeignClient(name = "hw-course-service", contextId = "learning-course")
 public interface CourseClient {
     @GetMapping("/internal/quizzes/{id}/snapshot")
-    Contracts.QuizSnapshot snapshot(@PathVariable("id") long id);
+    Contracts.QuizSnapshot snapshot(@PathVariable long id);
 
     @GetMapping("/internal/courses/{id}/chapters/{chapterId}/text")
-    Contracts.ChapterText text(
-            @PathVariable("id") long id, @PathVariable("chapterId") long chapterId);
+    Contracts.ChapterText text(@PathVariable long id, @PathVariable long chapterId);
 
     @PostMapping("/internal/quizzes/{id}/grade")
-    Contracts.QuizResult grade(
-            @PathVariable("id") long id, @RequestBody Contracts.QuizAnswers answers);
+    Contracts.QuizResult grade(@PathVariable long id, @RequestBody Contracts.QuizAnswers answers);
 
     @GetMapping("/internal/courses/staff-ids")
     java.util.List<Long> staffIds(@RequestParam("teachOnly") boolean teachOnly);
 
     @GetMapping("/internal/courses/{id}/validation")
-    Contracts.CourseValidation course(@PathVariable("id") long id);
+    Contracts.CourseValidation course(@PathVariable long id);
 
     @GetMapping("/internal/courses/{id}/chapters/{chapterId}/validation")
-    Contracts.ChapterValidation chapter(
-            @PathVariable("id") long id, @PathVariable("chapterId") long chapterId);
+    Contracts.ChapterValidation chapter(@PathVariable long id, @PathVariable long chapterId);
 
     @GetMapping("/internal/instance")
     Map<String, Object> instance();
@@ -36,5 +33,5 @@ public interface CourseClient {
     java.util.List<Contracts.WorkBrief> works(@RequestParam("ids") String ids);
 
     @GetMapping("/internal/literature/{id}/validation")
-    Contracts.WorkBrief work(@PathVariable("id") long id);
+    Contracts.WorkBrief work(@PathVariable long id);
 }

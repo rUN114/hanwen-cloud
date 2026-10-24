@@ -1,0 +1,7 @@
+version: "1.0"
+profile:
+  name: qodana.starter
+projectJDK: "25"
+linter: jetbrains/qodana-jvm:2026.1
+
+# 配置位于 backend；CI 接入时需明确分析目录和质量门禁，目前 verify.yml 尚未执行 Qodana。

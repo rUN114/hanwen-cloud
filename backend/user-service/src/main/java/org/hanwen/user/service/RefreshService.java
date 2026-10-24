@@ -72,8 +72,7 @@ public class RefreshService {
         var now = Views.now();
         String token = randomToken();
         var expires = now.plusHours(8);
-        // Old expired rows carry hashes only. Keep audit records; prune a bounded batch of
-        // sessions.
+        // 只清理到期会话，登录审计另存；每次最多删一千条，避免长时间占用事务。
         db.update("DELETE FROM auth_refresh_session WHERE expires_at < ? LIMIT 1000", now);
         db.update(
                 "INSERT INTO"
@@ -107,8 +106,7 @@ public class RefreshService {
         var old = records.getFirst();
         User u = users.lock(old.user());
         valid(u, old.version());
-        // User lock orders refresh, password reset and logout consistently; the hash rotation is
-        // conditional.
+        // 续期、重置密码和退出都先锁用户；下方按旧摘要更新，确保同一令牌只能续期一次。
         var now = Views.now();
         if (!old.expires().isAfter(now)) throw expired();
         String next = randomToken();

@@ -3,6 +3,7 @@ package org.hanwen.common;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 
+import org.jspecify.annotations.NonNull;
 import org.slf4j.*;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,7 +24,10 @@ public class AuthFilter extends OncePerRequestFilter {
         key = k;
     }
 
-    protected void doFilterInternal(HttpServletRequest r, HttpServletResponse s, FilterChain chain)
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest r,
+            @NonNull HttpServletResponse s,
+            @NonNull FilterChain chain)
             throws ServletException, IOException {
         String tid = r.getHeader("X-Trace-Id");
         if (tid == null || !tid.matches("[A-Za-z0-9-]{8,64}")) tid = UUID.randomUUID().toString();
@@ -46,6 +50,7 @@ public class AuthFilter extends OncePerRequestFilter {
                 if (p.endsWith("/has-data")) {
                     if (!a.role().equals("ADMIN")) throw ApiException.forbidden();
                 } else {
+                    // 每次核对当前状态和授权版本，使停用账号、改角色或重置密码及时生效。
                     var state = lookup.find(a.id());
                     if (state == null
                             || !state.status().equals("ENABLED")
@@ -76,6 +81,7 @@ public class AuthFilter extends OncePerRequestFilter {
                     r.getRequestURI(),
                     s.getStatus(),
                     r.getLocalPort());
+            // 容器会复用请求线程，身份和追踪号不能留给下一个请求。
             Actor.clear();
             Trace.clear();
         }
