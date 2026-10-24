@@ -263,16 +263,37 @@ public class StudyService {
                 enrollments.selectList(
                         q.orderByAsc("id").last("LIMIT " + size + " OFFSET " + offset));
         var names = Names.read(rows.stream().map(e -> e.studentId).toList(), directory, remote);
+        var completedByEnrollment = new HashMap<Long, Integer>();
+        var notesByEnrollment = new HashMap<Long, Integer>();
+        if (!rows.isEmpty()) {
+            var ids = rows.stream().map(e -> e.id).toList();
+            progress.selectMaps(
+                            new QueryWrapper<Progress>()
+                                    .select("enrollment_id", "COUNT(*) AS n")
+                                    .in("enrollment_id", ids)
+                                    .eq("completed", true)
+                                    .groupBy("enrollment_id"))
+                    .forEach(
+                            row ->
+                                    completedByEnrollment.put(
+                                            ((Number) row.get("enrollment_id")).longValue(),
+                                            ((Number) row.get("n")).intValue()));
+            notes.selectMaps(
+                            new QueryWrapper<Note>()
+                                    .select("enrollment_id", "COUNT(*) AS n")
+                                    .in("enrollment_id", ids)
+                                    .groupBy("enrollment_id"))
+                    .forEach(
+                            row ->
+                                    notesByEnrollment.put(
+                                            ((Number) row.get("enrollment_id")).longValue(),
+                                            ((Number) row.get("n")).intValue()));
+        }
         return Views.page(
                 rows.stream()
                         .map(
                                 e -> {
-                                    int completed =
-                                            progress.selectCount(
-                                                            new QueryWrapper<Progress>()
-                                                                    .eq("enrollment_id", e.id)
-                                                                    .eq("completed", true))
-                                                    .intValue();
+                                    int completed = completedByEnrollment.getOrDefault(e.id, 0);
                                     var percent =
                                             c.chapterCount() == 0
                                                     ? BigDecimal.ZERO
@@ -298,10 +319,7 @@ public class StudyService {
                                             "percent",
                                             percent,
                                             "noteCount",
-                                            notes.selectCount(
-                                                            new QueryWrapper<Note>()
-                                                                    .eq("enrollment_id", e.id))
-                                                    .intValue());
+                                            notesByEnrollment.getOrDefault(e.id, 0));
                                 })
                         .toList(),
                 page,

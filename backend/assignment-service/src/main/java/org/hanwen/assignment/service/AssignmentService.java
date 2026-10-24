@@ -484,12 +484,23 @@ public class AssignmentService {
         var rows =
                 submissions.selectList(
                         q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset));
+        var taskById = new HashMap<Long, Task>();
+        var gradeBySubmission = new HashMap<Long, Grade>();
+        if (!rows.isEmpty()) {
+            tasks.selectByIds(rows.stream().map(s -> s.assignmentId).distinct().toList())
+                    .forEach(t -> taskById.put(t.id, t));
+            grades.selectList(
+                            new QueryWrapper<Grade>()
+                                    .in("submission_id", rows.stream().map(s -> s.id).toList()))
+                    .forEach(g -> gradeBySubmission.put(g.submissionId, g));
+        }
         return Views.page(
                 rows.stream()
                         .map(
                                 s -> {
-                                    Task t = task(s.assignmentId);
-                                    Grade g = grade(s.id);
+                                    Task t = taskById.get(s.assignmentId);
+                                    if (t == null) throw ApiException.missing();
+                                    Grade g = gradeBySubmission.get(s.id);
                                     return Views.map(
                                             "submissionId",
                                             s.id,

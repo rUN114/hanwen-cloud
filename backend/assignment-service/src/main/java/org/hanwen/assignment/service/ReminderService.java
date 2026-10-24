@@ -69,13 +69,19 @@ public class ReminderService {
         String text = Views.text(in.content(), 500, "提醒内容");
         int sent = 0;
         var day = Views.now().toLocalDate();
+        var alreadyReminded =
+                reminders
+                        .selectList(
+                                new QueryWrapper<Reminder>()
+                                        .select("student_id")
+                                        .eq("assignment_id", id)
+                                        .eq("day_key", day)
+                                        .in("student_id", ids))
+                        .stream()
+                        .map(r -> r.studentId)
+                        .collect(java.util.stream.Collectors.toSet());
         for (long student : ids) {
-            if (reminders.selectCount(
-                            new QueryWrapper<Reminder>()
-                                    .eq("assignment_id", id)
-                                    .eq("student_id", student)
-                                    .eq("day_key", day))
-                    > 0) continue;
+            if (alreadyReminded.contains(student)) continue;
             var r = new Reminder();
             r.assignmentId = id;
             r.studentId = student;
@@ -147,8 +153,16 @@ public class ReminderService {
                                 .eq("student_id", Actor.current().id())
                                 .orderByDesc("id")
                                 .last("LIMIT 101"));
-        for (var x : rows.stream().limit(100).toList()) {
-            var t = assignmentService.task(x.assignmentId);
+        var visible = rows.stream().limit(100).toList();
+        var taskById = new HashMap<Long, Task>();
+        if (!visible.isEmpty())
+            assignmentService
+                    .tasks()
+                    .selectByIds(visible.stream().map(r -> r.assignmentId).distinct().toList())
+                    .forEach(t -> taskById.put(t.id, t));
+        for (var x : visible) {
+            var t = taskById.get(x.assignmentId);
+            if (t == null) throw ApiException.missing();
             if (ids.contains(t.courseId))
                 output.add(
                         Views.map(
