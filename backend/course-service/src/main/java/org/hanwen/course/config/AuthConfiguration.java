@@ -7,6 +7,6 @@ import org.springframework.context.annotation.*;
 public class AuthConfiguration {
     @Bean
     AuthLookup authLookup(InternalUserClient c, Remote r) {
-        return id -> r.call("auth-state", () -> c.auth(id));
+        return AuthLookup.remote(c, r);
     }
 }

@@ -64,14 +64,24 @@ public class GatewayAuthentication implements GlobalFilter, Ordered {
         } catch (ApiException e) {
             return error(clean, e, trace);
         }
-        return web.get()
-                .uri("http://hw-user-service/internal/users/" + actor.id() + "/auth-state")
-                .header("X-Service-Key", key)
-                .header("X-Trace-Id", trace)
-                .retrieve()
-                .bodyToMono(Contracts.AuthState.class)
-                .timeout(Duration.ofSeconds(3))
-                .flatMap(
+        Mono<Contracts.AuthState> check =
+                web.get()
+                        .uri("http://hw-user-service/internal/users/" + actor.id() + "/auth-state")
+                        .header("X-Service-Key", key)
+                        .header("X-Trace-Id", trace)
+                        .retrieve()
+                        .onStatus(
+                                status -> status.value() == 404,
+                                _ ->
+                                        Mono.error(
+                                                new ApiException(
+                                                        401, "AUTH_INVALID", "登录已失效，请重新登录")))
+                        .bodyToMono(Contracts.AuthState.class)
+                        .timeout(Duration.ofSeconds(3))
+                        .switchIfEmpty(Mono.error(ApiException.unavailable()))
+                        .onErrorMap(
+                                e -> !(e instanceof ApiException), _ -> ApiException.unavailable());
+        return check.flatMap(
                         state -> {
                             if (!state.status().equals("ENABLED")
                                     || state.authVersion() != actor.version()
@@ -82,7 +92,14 @@ public class GatewayAuthentication implements GlobalFilter, Ordered {
                                         trace);
                             return chain.filter(clean);
                         })
-                .onErrorResume(_ -> error(clean, ApiException.unavailable(), trace));
+                .onErrorResume(
+                        e ->
+                                error(
+                                        clean,
+                                        e instanceof ApiException a
+                                                ? a
+                                                : ApiException.unavailable(),
+                                        trace));
     }
 
     private Mono<Void> error(ServerWebExchange x, ApiException e, String trace) {
