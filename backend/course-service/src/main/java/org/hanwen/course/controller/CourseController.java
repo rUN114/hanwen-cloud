@@ -96,6 +96,12 @@ public class CourseController {
         return courseService.staffCourseIds(teachOnly);
     }
 
+    @GetMapping("/internal/courses/validations")
+    public java.util.List<Contracts.CourseValidation> validations(
+            @RequestParam java.util.List<Long> ids) {
+        return courseService.validations(ids);
+    }
+
     @GetMapping("/internal/courses/{id}/validation")
     public Contracts.CourseValidation validation(@PathVariable long id) {
         return courseService.validation(id);

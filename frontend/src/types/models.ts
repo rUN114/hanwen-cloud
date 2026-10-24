@@ -38,7 +38,7 @@ export interface Enrollment {
   studentId: string;
   joinedAt: string;
   courseName: string;
-  courseStatus: string;
+  courseStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "MISSING";
 }
 export interface Progress {
   chapterId: string;

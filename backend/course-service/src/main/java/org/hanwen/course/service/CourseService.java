@@ -9,7 +9,9 @@ import org.hanwen.course.model.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 
 @Service
 public class CourseService {
@@ -307,6 +309,36 @@ public class CourseService {
                 chapters.selectCount(new QueryWrapper<Chapter>().eq("course_id", id)).intValue(),
                 c.name,
                 accessRole(c));
+    }
+
+    public List<Contracts.CourseValidation> validations(List<Long> ids) {
+        if (ids.size() > 100 || ids.stream().anyMatch(id -> id == null || id < 1))
+            throw ApiException.bad("一次最多查询100个有效课程编号");
+        if (ids.isEmpty()) return List.of();
+        var rows = courses.selectByIds(ids);
+        if (rows.isEmpty()) return List.of();
+        var counts = new HashMap<Long, Integer>();
+        chapters.selectMaps(
+                        new QueryWrapper<Chapter>()
+                                .select("course_id", "COUNT(*) AS n")
+                                .in("course_id", rows.stream().map(c -> c.id).toList())
+                                .groupBy("course_id"))
+                .forEach(
+                        m ->
+                                counts.put(
+                                        ((Number) m.get("course_id")).longValue(),
+                                        ((Number) m.get("n")).intValue()));
+        return rows.stream()
+                .map(
+                        c ->
+                                new Contracts.CourseValidation(
+                                        c.id,
+                                        c.teacherId,
+                                        c.status,
+                                        counts.getOrDefault(c.id, 0),
+                                        c.name,
+                                        accessRole(c)))
+                .toList();
     }
 
     public Contracts.ChapterValidation validateChapter(long id, long chapterId) {

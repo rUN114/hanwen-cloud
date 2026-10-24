@@ -32,7 +32,7 @@ function load() {
       Array.from({ length: Math.min(3, rows.value.length) }, async () => {
         while (next < rows.value.length) {
           const e = rows.value[next++]!;
-          await loadProgress(e.id);
+          if (e.courseStatus !== "MISSING") await loadProgress(e.id);
         }
       }),
     );
@@ -68,7 +68,13 @@ onMounted(load);
       <div class="course-card-body">
         <StatusTag :status="e.courseStatus" />
         <small>加入于 {{ time(e.joinedAt) }}</small>
-        <template v-if="progress[e.id]">
+        <span
+          v-if="e.courseStatus === 'MISSING'"
+          class="muted"
+        >
+          课程不可用，无法读取学习进度。
+        </span>
+        <template v-else-if="progress[e.id]">
           <el-progress
             :percentage="Number(progress[e.id]!.percent)"
             :stroke-width="8"
@@ -94,7 +100,10 @@ onMounted(load);
         >
           进度加载中
         </span>
-        <div class="course-card-actions">
+        <div
+          v-if="e.courseStatus !== 'MISSING'"
+          class="course-card-actions"
+        >
           <RouterLink :to="'/student/courses/' + e.courseId">
             <el-button type="primary">进入课程书案</el-button>
           </RouterLink>

@@ -15,6 +15,8 @@ import java.util.*;
 
 @Service
 public class StudyService {
+    private static final org.slf4j.Logger LOG =
+            org.slf4j.LoggerFactory.getLogger(StudyService.class);
     final CourseClient courseClient;
     final EnrollmentMapper enrollments;
     final ProgressMapper progress;
@@ -309,12 +311,22 @@ public class StudyService {
 
     public List<Long> activeCourses() {
         Views.role("STUDENT");
-        return enrollments
-                .selectList(new QueryWrapper<Enrollment>().eq("student_id", Actor.current().id()))
-                .stream()
-                .map(e -> learning.course(e.courseId))
-                .filter(c -> c.status().equals("PUBLISHED"))
-                .map(Contracts.CourseValidation::id)
-                .toList();
+        var ids =
+                enrollments
+                        .selectList(
+                                new QueryWrapper<Enrollment>()
+                                        .eq("student_id", Actor.current().id()))
+                        .stream()
+                        .map(e -> e.courseId)
+                        .distinct()
+                        .toList();
+        var courses = learning.courseBatch(ids);
+        var result = new ArrayList<Long>();
+        for (long id : ids) {
+            var c = courses.get(id);
+            if (c == null) LOG.warn("选课课程缺失 studentId={} courseId={}", Actor.current().id(), id);
+            else if (c.status().equals("PUBLISHED")) result.add(id);
+        }
+        return result;
     }
 }

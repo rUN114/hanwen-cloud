@@ -31,4 +31,7 @@ public interface CourseClient {
 
     @GetMapping("/internal/literature/{id}/validation")
     Contracts.WorkBrief work(@PathVariable long id);
+
+    @GetMapping("/internal/courses/validations")
+    java.util.List<Contracts.CourseValidation> courses(@RequestParam String ids);
 }

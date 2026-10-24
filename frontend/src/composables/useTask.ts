@@ -36,6 +36,7 @@ export const statusNames: Record<string, string> = {
   DRAFT: "草稿",
   PUBLISHED: "已发布",
   ARCHIVED: "已归档",
+  MISSING: "课程不可用",
   CLOSED: "已关闭",
   SUBMITTED: "待评分",
   GRADED: "已评分",

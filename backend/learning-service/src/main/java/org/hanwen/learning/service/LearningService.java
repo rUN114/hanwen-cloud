@@ -12,9 +12,12 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.*;
+import java.util.*;
 
 @Service
 public class LearningService {
+    private static final org.slf4j.Logger LOG =
+            org.slf4j.LoggerFactory.getLogger(LearningService.class);
     final EnrollmentMapper enrollments;
     final ProgressMapper progress;
     final CourseClient course;
@@ -45,7 +48,11 @@ public class LearningService {
     }
 
     public Object view(Enrollment e) {
-        var c = course(e.courseId);
+        return view(e, course(e.courseId));
+    }
+
+    private Object view(Enrollment e, Contracts.CourseValidation c) {
+        if (c == null) LOG.warn("选课课程缺失 enrollmentId={} courseId={}", e.id, e.courseId);
         return Views.map(
                 "id",
                 e.id,
@@ -56,9 +63,24 @@ public class LearningService {
                 "joinedAt",
                 e.joinedAt,
                 "courseName",
-                c.name(),
+                c == null ? "课程已不可用" : c.name(),
                 "courseStatus",
-                c.status());
+                c == null ? "MISSING" : c.status());
+    }
+
+    Map<Long, Contracts.CourseValidation> courseBatch(List<Long> input) {
+        var ids = input.stream().distinct().toList();
+        var result = new HashMap<Long, Contracts.CourseValidation>();
+        // 控制单次请求长度，不限制学生累积的历史选课数量。
+        for (int i = 0; i < ids.size(); i += 50) {
+            String joined =
+                    ids.subList(i, Math.min(i + 50, ids.size())).stream()
+                            .map(String::valueOf)
+                            .collect(java.util.stream.Collectors.joining(","));
+            for (var c : remote.call("learning-courses", () -> course.courses(joined)))
+                result.put(c.id(), c);
+        }
+        return result;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -106,12 +128,12 @@ public class LearningService {
         var q = new QueryWrapper<Enrollment>().eq("student_id", Actor.current().id());
         if (courseId != null) q.eq("course_id", courseId);
         long total = enrollments.selectCount(q);
+        var rows =
+                enrollments.selectList(
+                        q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset));
+        var courses = courseBatch(rows.stream().map(e -> e.courseId).toList());
         return Views.page(
-                enrollments
-                        .selectList(q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset))
-                        .stream()
-                        .map(this::view)
-                        .toList(),
+                rows.stream().map(e -> view(e, courses.get(e.courseId))).toList(),
                 page,
                 size,
                 total);
