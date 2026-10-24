@@ -12,7 +12,6 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 class AssignmentSubmissionTest {
@@ -31,7 +30,7 @@ class AssignmentSubmissionTest {
         task.id = 1L;
         task.courseId = 11L;
         task.status = "PUBLISHED";
-        task.deadlineAt = LocalDateTime.now().plusHours(1);
+        task.deadlineAt = Views.now().plusHours(1);
         when(tasks.selectById(1L)).thenReturn(task);
         when(tasks.lock(1)).thenReturn(task);
         when(courses.course(11))
@@ -82,7 +81,7 @@ class AssignmentSubmissionTest {
     @ValueSource(strings = {"CLOSED", "DEADLINE", "ARCHIVED"})
     void retriesCannotBypassCourseAndTaskRestrictions(String state) {
         if (state.equals("CLOSED")) task.status = "CLOSED";
-        if (state.equals("DEADLINE")) task.deadlineAt = LocalDateTime.now().minusSeconds(1);
+        if (state.equals("DEADLINE")) task.deadlineAt = Views.now().minusSeconds(1);
         if (state.equals("ARCHIVED"))
             when(courses.course(11))
                     .thenReturn(new Contracts.CourseValidation(11, 1, "ARCHIVED", 1, "课程", "NONE"));
