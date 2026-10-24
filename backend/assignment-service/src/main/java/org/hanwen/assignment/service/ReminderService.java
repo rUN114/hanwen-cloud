@@ -110,14 +110,24 @@ public class ReminderService {
                                         .le("deadline_at", Views.now().plusHours(48))
                                         .orderByAsc("deadline_at")
                                         .last("LIMIT 101"));
-        for (var t : due.stream().limit(100).toList()) {
-            if (assignmentService
-                            .submissions()
-                            .selectCount(
-                                    new QueryWrapper<Submission>()
-                                            .eq("assignment_id", t.id)
-                                            .eq("student_id", Actor.current().id()))
-                    == 0)
+        var dueList = due.stream().limit(100).toList();
+        var doneIds =
+                dueList.isEmpty()
+                        ? Set.<Long>of()
+                        : assignmentService
+                                .submissions()
+                                .selectList(
+                                        new QueryWrapper<Submission>()
+                                                .select("assignment_id")
+                                                .in(
+                                                        "assignment_id",
+                                                        dueList.stream().map(t -> t.id).toList())
+                                                .eq("student_id", Actor.current().id()))
+                                .stream()
+                                .map(item -> item.assignmentId)
+                                .collect(java.util.stream.Collectors.toSet());
+        for (var t : dueList) {
+            if (!doneIds.contains(t.id))
                 output.add(
                         Views.map(
                                 "eventKey",

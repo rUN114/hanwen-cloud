@@ -33,6 +33,7 @@ public class Remote {
                     name,
                     e.getClass().getSimpleName(),
                     e.getCause() == null ? "none" : e.getCause().getClass().getSimpleName());
+            log.debug("Remote {} failure detail", name, e);
             throw ApiException.unavailable();
         }
     }

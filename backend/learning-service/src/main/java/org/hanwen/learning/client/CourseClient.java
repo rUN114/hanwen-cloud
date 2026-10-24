@@ -14,9 +14,6 @@ public interface CourseClient {
     @GetMapping("/internal/courses/{id}/chapters/{chapterId}/text")
     Contracts.ChapterText text(@PathVariable long id, @PathVariable long chapterId);
 
-    @PostMapping("/internal/quizzes/{id}/grade")
-    Contracts.QuizResult grade(@PathVariable long id, @RequestBody Contracts.QuizAnswers answers);
-
     @GetMapping("/internal/courses/staff-ids")
     java.util.List<Long> staffIds(@RequestParam("teachOnly") boolean teachOnly);
 

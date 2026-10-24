@@ -64,12 +64,6 @@ public class QuizController {
         return ApiResponse.ok(quizService.state(id, in));
     }
 
-    @PostMapping("/internal/quizzes/{id}/grade")
-    public Contracts.QuizResult grade(
-            @PathVariable long id, @RequestBody Contracts.QuizAnswers in) {
-        return quizService.grade(id, in);
-    }
-
     @GetMapping("/internal/quizzes/{id}/snapshot")
     public Contracts.QuizSnapshot snapshot(@PathVariable long id) {
         return quizService.snapshot(id);

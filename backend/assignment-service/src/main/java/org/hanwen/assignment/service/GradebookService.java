@@ -74,10 +74,9 @@ public class GradebookService {
     @Transactional
     public Object save(long id, Policy in) {
         Views.role("TEACHER");
-        access(id);
-        if (!assignment.course(id).canTeach()) throw ApiException.forbidden();
-        if (!assignment.course(id).status().equals("PUBLISHED"))
-            throw ApiException.conflict("归档课程总评规则只读");
+        var c = assignment.course(id);
+        if (!c.canGrade() || !c.canTeach()) throw ApiException.forbidden();
+        if (!c.status().equals("PUBLISHED")) throw ApiException.conflict("归档课程总评规则只读");
         if (in.assignmentWeight() < 0
                 || in.assignmentWeight() > 100
                 || !Set.of("ZERO", "EXCLUDE").contains(String.valueOf(in.missingRule()))

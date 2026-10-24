@@ -350,18 +350,4 @@ public class QuizService {
                                                 x.knowledgePoint))
                         .toList());
     }
-
-    @Transactional
-    public Contracts.QuizResult grade(long id, Contracts.QuizAnswers in) {
-        Views.role("STUDENT");
-        var initial = required(id);
-        var c = course.locked(initial.courseId);
-        course.readable(c, true);
-        var q = quizzes.lock(id);
-        if (!q.status.equals("PUBLISHED") || !c.status.equals("PUBLISHED"))
-            throw ApiException.conflict("练习或课程已归档，不能提交");
-        var frozen = snapshot(id);
-        PracticeRules.available(frozen, Views.now());
-        return QuestionRules.grade(frozen, in);
-    }
 }
