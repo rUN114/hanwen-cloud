@@ -76,6 +76,7 @@ jobs:
         run: |
           npm run format:check
           npm run build
+          npm test
       - name: Verify export, roster, workspace and revision comparison rules
         run: |
           node tests/export.test.mjs
