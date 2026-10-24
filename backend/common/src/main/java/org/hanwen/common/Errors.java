@@ -8,6 +8,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice
 public class Errors {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Errors.class);
+
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ApiResponse<Object>> api(ApiException e) {
         return ResponseEntity.status(e.status)
@@ -64,8 +66,7 @@ public class Errors {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Object>> unexpected(Exception e) {
-        org.slf4j.LoggerFactory.getLogger(Errors.class)
-                .error("traceId={} unexpected {}", Trace.id(), e.getClass().getSimpleName());
+        LOG.error("traceId={} unexpected", Trace.id(), e);
         return ResponseEntity.status(500)
                 .body(new ApiResponse<>("INTERNAL_ERROR", "操作未完成，请联系管理员", null, Trace.id()));
     }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PageHeading from "../../components/common/PageHeading.vue";
-import { session, home } from "../../stores/session";
+import { home } from "../../stores/session";
 </script>
 <template>
   <PageHeading
@@ -13,7 +13,7 @@ import { session, home } from "../../stores/session";
       alt=""
       aria-hidden="true"
     />
-    <RouterLink :to="home(session?.user.role)">
+    <RouterLink :to="home()">
       <el-button type="primary">返回首页</el-button>
     </RouterLink>
   </div>

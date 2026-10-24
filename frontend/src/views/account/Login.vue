@@ -40,9 +40,7 @@ async function finishLogin(result: Session) {
   form.password = "";
   const next = String(route.query.next || "");
   await router.push(
-    next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login")
-      ? next
-      : home(result.user.role),
+    next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login") ? next : home(),
   );
 }
 function demoLogin(role: string) {

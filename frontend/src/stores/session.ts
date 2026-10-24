@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { User, Role } from "../types/models";
+import type { User } from "../types/models";
 export interface Session {
   accessToken: string;
   expiresAt: string;
@@ -35,6 +35,6 @@ export function saveSession(value: Session) {
 export function updateUser(user: User) {
   if (session.value) saveSession({ ...session.value, user });
 }
-export function home(_role?: Role) {
+export function home() {
   return "/home";
 }

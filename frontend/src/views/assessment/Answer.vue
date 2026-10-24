@@ -127,7 +127,6 @@ onUnmounted(() => {
 watch(
   answer,
   () => {
-    if (!loaded.value) return;
     if (!loaded.value || readonly.value) return;
     if (answer.value !== base.value) sessionStorage.setItem(key, answer.value);
     else sessionStorage.removeItem(key);

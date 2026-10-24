@@ -108,6 +108,7 @@ public class CourseCopyService {
                 x.sortNo = r.sortNo;
                 x.questionType = r.questionType;
                 x.points = r.points;
+                x.knowledgePoint = r.knowledgePoint;
                 x.bankId = r.bankId;
                 x.bankVersion = r.bankVersion;
                 questions.insert(x);

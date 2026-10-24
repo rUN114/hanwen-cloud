@@ -135,7 +135,7 @@ const routes = [
 
   {
     path: "/",
-    redirect: () => (session.value ? home(session.value.user.role) : "/login"),
+    redirect: () => (session.value ? home() : "/login"),
   },
   { path: "/login", component: () => import("../views/account/Login.vue") },
   { path: "/account", component: () => import("../views/account/Account.vue") },
@@ -254,10 +254,9 @@ const router = createRouter({
 router.beforeEach((to) => {
   if (to.path === "/login") return true;
   if (!session.value) return { path: "/login", query: { next: to.fullPath } };
-  if (to.meta.role && to.meta.role !== session.value.user.role)
-    return home(session.value.user.role);
+  if (to.meta.role && to.meta.role !== session.value.user.role) return home();
   if (to.meta.roles && !(to.meta.roles as string[]).includes(session.value.user.role))
-    return home(session.value.user.role);
+    return home();
   return true;
 });
 router.afterEach((to) => {
