@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { canTeach, courseRoles } from "../../utils/course-access";
 import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
@@ -320,14 +321,13 @@ function transition(t: Task, publish: boolean) {
       </RouterLink>
     </div>
   </article>
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :disabled="busy"
     :total="total"
     :page-size="10"
-    layout="prev,pager,next,total"
-    @current-change="load"
+    @change="load"
   />
   <el-dialog
     v-model="dialog"

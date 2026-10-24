@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, reactive, onMounted } from "vue";
 import { api } from "../../api/client";
 import { useTask } from "../../composables/useTask";
@@ -194,13 +195,12 @@ function state(q: BankQuestion) {
       </div>
     </article>
   </section>
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :total="total"
     :page-size="12"
-    layout="prev,pager,next,total"
-    @current-change="load"
+    @change="load"
   />
   <el-dialog
     v-model="editing"

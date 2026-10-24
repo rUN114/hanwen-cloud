@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../common/ListPager.vue";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { api, apiFile, saveBlob } from "../../api/client";
 import { session } from "../../stores/session";
@@ -183,13 +184,12 @@ const size = (b: number) =>
         <p>书架尚待充实，教师可上架本章资料。</p>
       </div>
     </div>
-    <el-pagination
+    <ListPager
       v-if="total"
-      v-model:current-page="page"
+      v-model:page="page"
       :total="total"
       :page-size="12"
-      layout="prev,pager,next,total"
-      @current-change="load"
+      @change="load"
     />
   </section>
   <el-dialog

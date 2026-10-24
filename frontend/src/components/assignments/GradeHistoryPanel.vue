@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../common/ListPager.vue";
 import { ref, watch } from "vue";
 import { api } from "../../api/client";
 import { useTask, time } from "../../composables/useTask";
@@ -60,13 +61,12 @@ watch(
       </li>
     </ol>
     <p v-if="!rows.length && !busy">尚无评分记录。</p>
-    <el-pagination
+    <ListPager
       v-if="total"
-      v-model:current-page="page"
+      v-model:page="page"
       :total="total"
       :page-size="20"
-      layout="prev,pager,next,total"
-      @current-change="load"
+      @change="load"
     />
   </section>
 </template>

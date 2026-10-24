@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, watch, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import { api } from "../../api/client";
@@ -292,12 +293,11 @@ function exportNotes() {
     :empty="!busy && !error && !rows.length"
     empty-text="尚无札记。可以在章节阅读时记下想法，也可以从这里新写。"
   />
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :total="total"
     :page-size="10"
-    layout="prev,pager,next,total"
-    @current-change="run(fetchRows)"
+    @change="run(fetchRows)"
   />
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../../api/client";
@@ -141,12 +142,11 @@ function open(index: number) {
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      v-model:current-page="page"
+    <ListPager
+      v-model:page="page"
       :total="total"
       :page-size="20"
-      layout="prev,pager,next,total"
-      @current-change="load"
+      @change="load"
     />
   </section>
 </template>

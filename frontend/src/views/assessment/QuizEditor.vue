@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { canTeach, courseRoles } from "../../utils/course-access";
 import { ref, reactive, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
@@ -435,13 +436,12 @@ function importQuestion(q: BankQuestion) {
     </article>
     <p v-if="!bankRows.length && !busy">没有匹配题笺，可调整筛选，或前往题库新建。</p>
     <RouterLink to="/teacher/question-bank">前往问学题笺</RouterLink>
-    <el-pagination
+    <ListPager
       v-if="bankTotal"
-      v-model:current-page="bankPage"
+      v-model:page="bankPage"
       :total="bankTotal"
       :page-size="12"
-      layout="prev,pager,next,total"
-      @current-change="() => run(fetchBank)"
+      @change="() => run(fetchBank)"
     />
   </el-dialog>
 </template>

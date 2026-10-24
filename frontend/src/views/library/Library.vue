@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { api } from "../../api/client";
@@ -196,12 +197,11 @@ function state(w: Work) {
       </div>
     </article>
   </section>
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :total="total"
     :page-size="9"
-    layout="prev,pager,next,total"
-    @current-change="load"
+    @change="load"
   />
 </template>

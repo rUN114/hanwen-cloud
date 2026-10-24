@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, computed, onMounted } from "vue";
 import { api } from "../../api/client";
 import { useTask, time } from "../../composables/useTask";
@@ -228,14 +229,13 @@ onMounted(() =>
         <p>此范围没有题签。完成测验后，已开放解析的错题会自动收录。</p>
         <RouterLink to="/student/enrollments">回课程继续问学</RouterLink>
       </div>
-      <el-pagination
+      <ListPager
         v-if="total"
-        v-model:current-page="page"
+        v-model:page="page"
         :total="total"
         :page-size="10"
-        layout="prev,pager,next,total"
         :disabled="busy"
-        @current-change="load"
+        @change="load"
       />
     </section>
     <article

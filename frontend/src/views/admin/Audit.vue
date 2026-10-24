@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, onMounted } from "vue";
 import { api } from "../../api/client";
 import { useTask, time } from "../../composables/useTask";
@@ -79,12 +80,11 @@ onMounted(load);
       </div>
     </article>
   </section>
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :total="total"
     :page-size="20"
-    layout="prev,pager,next,total"
-    @current-change="load"
+    @change="load"
   />
 </template>

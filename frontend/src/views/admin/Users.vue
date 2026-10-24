@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, reactive, onMounted } from "vue";
 import { ElMessageBox, ElMessage } from "element-plus";
 import { api } from "../../api/client";
@@ -177,12 +178,11 @@ function reset(u: User) {
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      v-model:current-page="page"
+    <ListPager
+      v-model:page="page"
       :total="total"
       :page-size="10"
-      layout="prev,pager,next,total"
-      @current-change="load"
+      @change="load"
     />
   </div>
   <el-dialog

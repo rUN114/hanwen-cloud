@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { ref, reactive, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import { api } from "../../api/client";
@@ -333,13 +334,12 @@ function exportRoster() {
         </article>
         <p v-if="!rows.length">尚无同窗，可批量加入或发送邀请码。</p>
       </div>
-      <el-pagination
+      <ListPager
         v-if="total"
-        v-model:current-page="page"
+        v-model:page="page"
         :total="total"
         :page-size="20"
-        layout="prev,pager,next,total"
-        @current-change="() => run(fetchRoster)"
+        @change="() => run(fetchRoster)"
       />
     </section>
   </template>

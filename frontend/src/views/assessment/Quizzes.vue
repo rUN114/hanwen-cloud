@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { canTeach, courseRoles } from "../../utils/course-access";
 import { ref, reactive, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -165,13 +166,12 @@ function create() {
       </RouterLink>
     </article>
   </section>
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :total="total"
     :page-size="12"
-    layout="prev,pager,next,total"
-    @current-change="() => run(fetchRows)"
+    @change="() => run(fetchRows)"
   />
   <section
     v-if="teacher"
@@ -192,13 +192,12 @@ function create() {
       <small>{{ time(r.completedAt) }}</small>
     </div>
     <p v-if="!results.length">等待同窗提交练习。</p>
-    <el-pagination
+    <ListPager
       v-if="resultsTotal"
-      v-model:current-page="resultsPage"
+      v-model:page="resultsPage"
       :total="resultsTotal"
       :page-size="20"
-      layout="prev,pager,next,total"
-      @current-change="() => run(fetchResults)"
+      @change="() => run(fetchResults)"
     />
   </section>
   <el-dialog

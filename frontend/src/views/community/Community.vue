@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ListPager from "../../components/common/ListPager.vue";
 import { canTeach, courseRoles } from "../../utils/course-access";
 import { ref, watch, computed } from "vue";
 import { useRoute } from "vue-router";
@@ -370,12 +371,11 @@ function remove(n: Notice) {
       还没有符合条件的问题。
     </p>
   </section>
-  <el-pagination
+  <ListPager
     v-if="total"
-    v-model:current-page="page"
+    v-model:page="page"
     :total="total"
     :page-size="8"
-    layout="prev,pager,next,total"
-    @current-change="run(fetchRows)"
+    @change="run(fetchRows)"
   />
 </template>
