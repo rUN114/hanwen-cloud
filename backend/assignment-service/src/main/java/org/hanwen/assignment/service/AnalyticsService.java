@@ -43,10 +43,9 @@ public class AnalyticsService {
             // Mapper queries round aggregates to two decimals; score columns already have scale 2.
             if (v instanceof java.math.BigDecimal b)
                 v = b.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
-            if (v instanceof java.time.LocalDateTime t)
-                v = t.atOffset(java.time.ZoneOffset.ofHours(8)).toString();
+            if (v instanceof java.time.LocalDateTime t) v = BusinessTime.atOffset(t).toString();
             if (v instanceof java.sql.Timestamp t)
-                v = t.toLocalDateTime().atOffset(java.time.ZoneOffset.ofHours(8)).toString();
+                v = BusinessTime.atOffset(t.toLocalDateTime()).toString();
             result.put(e.getKey(), v);
         }
         return result;

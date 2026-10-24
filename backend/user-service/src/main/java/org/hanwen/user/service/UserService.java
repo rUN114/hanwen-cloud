@@ -25,8 +25,8 @@ public class UserService {
     final Remote remote;
     final UserAudit audit;
     final BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder(12);
-    // Single user-service instance: local attempt limits; use a shared store if horizontally
-    // scaled.
+    // 当前登录请求经网关转发，连接地址相同，同名账号共用失败次数。
+    // 计数只保留在本实例内；启用真实客户端地址前需验证受信代理链。
     final Map<String, Attempt> attempts = new HashMap<>();
     final String dummyHash;
 

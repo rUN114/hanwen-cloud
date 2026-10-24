@@ -77,9 +77,7 @@ public class UserController {
         var result = (Map<String, Object>) service.login(in, r.getRemoteAddr());
         var value = refresh.open(jwt.parse("Bearer " + result.get("accessToken")));
         cookie(response, value);
-        result.put(
-                "sessionExpiresAt",
-                value.expiresAt().atOffset(java.time.ZoneOffset.ofHours(8)).toString());
+        result.put("sessionExpiresAt", BusinessTime.atOffset(value.expiresAt()).toString());
         return ApiResponse.ok(result);
     }
 

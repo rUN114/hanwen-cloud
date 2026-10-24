@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { ApiError } from "../api/client";
+import { BUSINESS_TIME_ZONE } from "../utils/businessTime";
 export function useTask() {
   const busy = ref(false);
   const error = ref<ApiError | null>(null);
@@ -25,7 +26,7 @@ export function useTask() {
 export function time(value?: string | null) {
   return value
     ? new Intl.DateTimeFormat("zh-CN", {
-        timeZone: "Asia/Shanghai",
+        timeZone: BUSINESS_TIME_ZONE,
         dateStyle: "medium",
         timeStyle: "short",
         hour12: false,

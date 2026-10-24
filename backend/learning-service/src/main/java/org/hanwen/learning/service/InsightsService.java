@@ -55,7 +55,7 @@ public class InsightsService {
             if (key.endsWith("Id") && value != null) {
                 value = value.toString();
             } else if (time != null) {
-                value = time.atOffset(ZoneOffset.ofHours(8)).toString();
+                value = BusinessTime.atOffset(time).toString();
             } else if (value instanceof java.math.BigDecimal decimal) {
                 if (key.endsWith("Percent") || key.equals("percent")) {
                     // Percentage queries already use ROUND(..., 2).

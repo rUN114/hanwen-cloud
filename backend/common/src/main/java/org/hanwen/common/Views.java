@@ -14,7 +14,7 @@ public final class Views {
 
     private static Object value(Object v) {
         if (v instanceof Long l) return l.toString();
-        if (v instanceof LocalDateTime t) return t.atOffset(ZoneOffset.ofHours(8)).toString();
+        if (v instanceof LocalDateTime t) return BusinessTime.atOffset(t).toString();
         if (v instanceof BigDecimal n) return n.setScale(2, RoundingMode.HALF_UP).toPlainString();
         return v;
     }
@@ -37,8 +37,7 @@ public final class Views {
     }
 
     public static LocalDateTime now() {
-        return LocalDateTime.now(ZoneId.of("Asia/Shanghai"))
-                .truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+        return BusinessTime.now();
     }
 
     public static String text(String s, int max, String label) {
@@ -69,9 +68,7 @@ public final class Views {
     public static LocalDateTime deadline(String s) {
         if (s == null || s.isBlank()) return null;
         try {
-            return OffsetDateTime.parse(s)
-                    .atZoneSameInstant(ZoneId.of("Asia/Shanghai"))
-                    .toLocalDateTime();
+            return OffsetDateTime.parse(s).atZoneSameInstant(BusinessTime.ZONE).toLocalDateTime();
         } catch (Exception e) {
             throw ApiException.bad("截止时间须包含时区");
         }

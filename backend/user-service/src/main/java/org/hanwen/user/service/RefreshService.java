@@ -118,7 +118,7 @@ public class RefreshService {
                         u.role,
                         u.authVersion,
                         privateKey,
-                        accessExpiry.atOffset(java.time.ZoneOffset.ofHours(8)).toInstant());
+                        BusinessTime.atOffset(accessExpiry).toInstant());
         int changed =
                 db.update(
                         "UPDATE auth_refresh_session SET token_hash=?,updated_at=? WHERE id=? AND"

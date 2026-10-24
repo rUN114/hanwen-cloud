@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BUSINESS_TIME_OFFSET } from "../../utils/businessTime";
 import { ref, reactive, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { api } from "../../api/client";
@@ -46,7 +47,7 @@ function save() {
       description: form.description,
       maxScore: form.maxScore,
       rubric: form.rubric,
-      deadlineAt: form.deadlineLocal ? form.deadlineLocal + ":00+08:00" : null,
+      deadlineAt: form.deadlineLocal ? form.deadlineLocal + ":00" + BUSINESS_TIME_OFFSET : null,
       ...(!id ? { courseId: courseId.value } : {}),
     };
     await api("/api/teacher/assignments" + (id ? "/" + id : ""), {

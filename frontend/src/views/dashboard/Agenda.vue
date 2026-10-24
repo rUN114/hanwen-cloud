@@ -6,8 +6,9 @@ import { useTask, time } from "../../composables/useTask";
 import type { AgendaTask } from "../../types/models";
 import PageHeading from "../../components/common/PageHeading.vue";
 import StatePanel from "../../components/common/StatePanel.vue";
+import { BUSINESS_TIME_ZONE } from "../../utils/businessTime";
 const today = new Intl.DateTimeFormat("sv-SE", {
-  timeZone: "Asia/Shanghai",
+  timeZone: BUSINESS_TIME_ZONE,
 }).format(new Date());
 const month = ref(today.slice(0, 7));
 const selected = ref("");
