@@ -13,7 +13,11 @@ public class Attachment {
     public String mimeType;
     public Long bytes;
     public String sha256;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String storageName;
+
     public String status;
     public java.time.LocalDateTime createdAt;
+    public java.time.LocalDateTime removedAt;
 }

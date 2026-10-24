@@ -6,6 +6,7 @@ import org.hanwen.assignment.mapper.*;
 import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +18,8 @@ import java.util.*;
 
 @Service
 public class AttachmentService {
+    private static final org.slf4j.Logger LOG =
+            org.slf4j.LoggerFactory.getLogger(AttachmentService.class);
     final AssignmentService assignments;
     final AttachmentMapper files;
     final Path storage;
@@ -155,6 +158,7 @@ public class AttachmentService {
     }
 
     public Path file(Attachment f) {
+        if (f.storageName == null) throw ApiException.missing();
         Path p = storage.resolve(f.storageName).normalize();
         if (!p.startsWith(storage) || !Files.isRegularFile(p)) throw ApiException.missing();
         return p;
@@ -166,6 +170,50 @@ public class AttachmentService {
         if (f.studentId != Actor.current().id()) throw ApiException.forbidden();
         writable(f.assignmentId);
         f.status = "REMOVED";
+        f.removedAt = Views.now();
         files.updateById(f);
+    }
+
+    @Scheduled(fixedDelay = 21_600_000, initialDelay = 60_000)
+    void purgeRemovedAttachments() {
+        // 按主键推进本轮批次，坏文件留待下次重试，不阻挡后面的正常记录。
+        long after = 0;
+        var cutoff = Views.now().minusDays(30);
+        while (true) {
+            var rows =
+                    files.selectList(
+                            new QueryWrapper<Attachment>()
+                                    .eq("status", "REMOVED")
+                                    .isNotNull("storage_name")
+                                    .lt("removed_at", cutoff)
+                                    .gt("id", after)
+                                    .orderByAsc("id")
+                                    .last("LIMIT 200"));
+            if (rows.isEmpty()) return;
+            for (var f : rows) {
+                Path path = storage.resolve(f.storageName).normalize();
+                if (!path.startsWith(storage)) {
+                    LOG.error("附件路径越界，跳过 id={}", f.id);
+                    continue;
+                }
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    LOG.warn("附件清理失败，下轮重试 id={}", f.id, e);
+                    continue;
+                }
+                // 文件已不存在也可补记完成，覆盖删盘成功、数据库写入失败的重试。
+                files.update(
+                        null,
+                        new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<
+                                        Attachment>()
+                                .eq("id", f.id)
+                                .eq("status", "REMOVED")
+                                .eq("storage_name", f.storageName)
+                                .set("storage_name", null));
+            }
+            after = rows.getLast().id;
+            if (rows.size() < 200) return;
+        }
     }
 }

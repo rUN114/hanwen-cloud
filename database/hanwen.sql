@@ -1235,16 +1235,18 @@ CREATE TABLE IF NOT EXISTS `assignment_attachment` (
 
   `sha256` char(64) NOT NULL,
 
-  `storage_name` varchar(80) NOT NULL,
+  `storage_name` varchar(80) DEFAULT NULL,
 
   `status` varchar(16) NOT NULL,
 
   `created_at` datetime(3) NOT NULL,
+  `removed_at` datetime(3) DEFAULT NULL,
 
   PRIMARY KEY (`id`),
 
   UNIQUE KEY `storage_name` (`storage_name`),
 
+  KEY `idx_attachment_purge` (`status`,`removed_at`,`id`),
   KEY `idx_attachment_task_student` (`assignment_id`,`student_id`,`status`),
 
   CONSTRAINT `assignment_attachment_ibfk_1` FOREIGN KEY (`assignment_id`) REFERENCES `assignment_task` (`id`),
