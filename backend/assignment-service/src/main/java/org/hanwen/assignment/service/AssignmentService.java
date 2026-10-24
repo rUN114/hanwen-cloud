@@ -313,10 +313,23 @@ public class AssignmentService {
         student(initial, true);
         Task t = lockedTask(id);
         writable(t);
+        String content = Views.text(in.answerText(), 10000, "答案");
+        // 已持有作业锁；使用当前读，避免等待锁之前建立的快照漏掉并发提交。
+        var existing =
+                submissions.selectOne(
+                        new QueryWrapper<Submission>()
+                                .eq("assignment_id", id)
+                                .eq("student_id", Actor.current().id())
+                                .last("FOR UPDATE"));
+        if (existing != null) {
+            if (!existing.answerText.equals(content))
+                throw new ApiException(409, "SUBMISSION_EXISTS", "作业已提交，修改答案请使用修改功能");
+            return submissionView(existing, true);
+        }
         Submission s = new Submission();
         s.assignmentId = id;
         s.studentId = Actor.current().id();
-        s.answerText = Views.text(in.answerText(), 10000, "答案");
+        s.answerText = content;
         s.status = "SUBMITTED";
         s.version = 0;
         s.submittedAt = s.createdAt = s.updatedAt = Views.now();
