@@ -49,6 +49,7 @@ jobs:
       - name: Check publication boundaries
         run: |
           python3 tools/check_publication.py --self-test
+          python3 tests/publication_guard_test.py
           python3 tools/check_publication.py
       - uses: actions/setup-java@v6
         with:

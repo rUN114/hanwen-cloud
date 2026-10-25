@@ -15,29 +15,73 @@ PATTERNS = {
     'student identifier': re.compile(r'\b20\d{9}\b'),
 }
 
+def decode_text(content):
+    if content.startswith((b'\xff\xfe\x00\x00', b'\x00\x00\xfe\xff')):
+        return content.decode('utf-32')
+    if content.startswith((b'\xff\xfe', b'\xfe\xff')):
+        return content.decode('utf-16')
+    if b'\0' in content:
+        # 无BOM的宽字符文本也必须检查，不能按二进制略过。
+        if content[1::2].count(0) > len(content) // 5:
+            return content.decode('utf-16-le')
+        if content[0::2].count(0) > len(content) // 5:
+            return content.decode('utf-16-be')
+        raise UnicodeError('Not a supported text encoding')
+    return content.decode('utf-8-sig')
+
+
+def is_web_asset(path, content):
+    if not (path.startswith('frontend/public/') or path.startswith('docs/images/')):
+        return False
+    suffix = PurePosixPath(path).suffix
+    signatures = {'.png': (b'\x89PNG\r\n\x1a\n',), '.jpg': (b'\xff\xd8\xff',), '.jpeg': (b'\xff\xd8\xff',),
+                  '.gif': (b'GIF87a', b'GIF89a'), '.ico': (b'\0\0\1\0',),
+                  '.woff2': (b'wOF2',), '.woff': (b'wOFF',), '.ttf': (b'\0\1\0\0',), '.otf': (b'OTTO',)}
+    if suffix in signatures:
+        return content.startswith(signatures[suffix])
+    return suffix == '.webp' and content.startswith(b'RIFF') and content[8:12] == b'WEBP'
+
 
 def inspect(path, content, known_secrets=()):
-    parts = PurePosixPath(path).parts
+    normalized = path.replace('\\', '/').lower()
+    parts = PurePosixPath(normalized).parts
     reasons = []
     if any(p in {'.local', '.idea', 'node_modules', 'target', '.playwright-cli'} for p in parts):
         reasons.append('private or generated directory')
-    if parts[0] in {'output', 'evidence'} or path.startswith('database/history/'):
+    if any(p in {'output', 'evidence'} for p in parts) or 'database/history/' in normalized:
         reasons.append('local evidence or database history')
     filename = parts[-1].lower()
-    if filename.startswith('.env') and not filename.endswith('.example'):
+    if (filename.startswith('.env') or '.env' in PurePosixPath(filename).suffixes) and not filename.endswith('.example'):
         reasons.append('private environment file')
-    if PurePosixPath(filename).suffix in {'.pem', '.key', '.p12', '.pfx', '.jks', '.zip', '.rar', '.7z', '.bak', '.dump'}:
+    if PurePosixPath(filename).suffix in {'.pem', '.key', '.p12', '.pfx', '.jks', '.zip', '.rar', '.7z', '.bak', '.dump', '.gz', '.bz2', '.xz', '.tar', '.docx', '.xlsx', '.pptx'}:
         reasons.append('key, archive or backup')
     if filename.endswith('.sql') and '-data' in filename:
         reasons.append('database data snapshot')
     if len(content) > 10 * 1024 * 1024:
         reasons.append('large file requires separate review')
-    # Binary web assets are checked by path/size; text is checked for sensitive values.
-    if b'\0' not in content[:8192]:
-        text = content.decode('utf-8', errors='replace')
+        return reasons
+    if is_web_asset(normalized, content):
+        return reasons
+    try:
+        text = decode_text(content)
+    except UnicodeError:
+        reasons.append('unreviewed binary or invalid text encoding')
+    else:
         reasons.extend(label for label, pattern in PATTERNS.items() if pattern.search(text))
         if any(secret in text for secret in known_secrets):
             reasons.append('value from private local credentials')
+        # 只识别实际配置行，不把测试源码里的字符串或环境变量引用当作凭据。
+        source_suffixes = {'.py', '.java', '.ts', '.vue', '.js', '.mjs', '.css', '.html', '.ps1', '.sh', '.cmd', '.bat', '.xml', '.md'}
+        assignments = [] if PurePosixPath(filename).suffix in source_suffixes else re.findall(r'''(?im)^\s*["']?([\w.-]*(?:password|secret|token|service[_-]?key)[\w.-]*)["']?\s*[:=]\s*["']?([^\s"',}]+)''', text)
+        for _, value in assignments:
+            placeholder = value.upper().startswith(('CHANGE_ME', 'REPLACE_ME', 'REPLACE_WITH', 'YOUR_'))
+            if value and not value.startswith(('$', '<')) and not placeholder and value.upper() not in {'NONE', 'NULL', 'FALSE', 'TRUE', 'YES', 'NO'}:
+                reasons.append('literal credential configuration requires review')
+                break
+        sensitive_tables = r'(?:sys_user|auth_refresh_session|course_enrollment|learning_progress|assignment_submission|assignment_grade)'
+        sql_text = PurePosixPath(filename).suffix == '.sql' or re.match(r'(?is)^\s*(?:(?:--[^\n]*\n)|\s)*(?:INSERT|REPLACE|USE|SET|CREATE)\b', text)
+        if text.lstrip().startswith('-- MySQL dump') or (sql_text and re.search(r'(?i)\bINSERT\s+(?:IGNORE\s+)?INTO\s+(?:`?hw_\w+`?\.)?`?' + sensitive_tables + r'`?\s*\(', text)):
+            reasons.append('database data snapshot content')
     return reasons
 
 
