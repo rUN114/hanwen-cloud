@@ -28,6 +28,8 @@ public class UserService {
     // 当前登录请求经网关转发，连接地址相同，同名账号共用失败次数。
     // 计数只保留在本实例内；启用真实客户端地址前需验证受信代理链。
     final Map<String, Attempt> attempts = new HashMap<>();
+    static final int MAX_ATTEMPTS = 10000;
+    private long attemptsCleanedAt;
     final String dummyHash;
 
     record Attempt(int count, long expires) {}
@@ -87,19 +89,18 @@ public class UserService {
     }
 
     public Object login(Login input, String ip) throws Exception {
-        String
-                name =
-                        input.username() == null
-                                ? ""
-                                : input.username().strip().toLowerCase(Locale.ROOT),
-                key = ip + ":" + name;
+        String name =
+                input.username() == null ? "" : input.username().strip().toLowerCase(Locale.ROOT);
+        // 非法用户名共用失败键，不能把任意长的外部输入留在计数表中。
+        if (!name.matches("[a-z0-9_.-]{3,50}")) name = "";
+        String key = ip + ":" + name;
         long now = System.currentTimeMillis();
         synchronized (attempts) {
-            var a = attempts.get(key);
-            if (a != null && a.expires() > now && a.count() >= 5)
-                throw new ApiException(429, "LOGIN_LIMITED", "登录失败次数过多，请5分钟后重试");
-            if (attempts.size() > 10000)
+            if (now - attemptsCleanedAt >= 1000) {
                 attempts.entrySet().removeIf(e -> e.getValue().expires() < now);
+                attemptsCleanedAt = now;
+            }
+            attemptSlot(key, now);
         }
         User u = users.selectOne(new QueryWrapper<User>().eq("username", name));
         String raw = input.password() == null ? "" : input.password();
@@ -108,6 +109,8 @@ public class UserService {
                         && bcrypt.matches(raw, u == null ? dummyHash : u.passwordHash);
         if (u == null || !matched || !u.status.equals("ENABLED")) {
             synchronized (attempts) {
+                // 并发请求完成密码校验后仍需原子复核容量，不淘汰有效锁定来腾位置。
+                attemptSlot(key, now);
                 attempts.compute(
                         key,
                         (_, a) ->
@@ -123,6 +126,14 @@ public class UserService {
         String token = jwt.issue(u.id, u.role, u.authVersion, privateKey);
         return Views.map(
                 "accessToken", token, "expiresAt", Views.now().plusMinutes(15), "user", view(u));
+    }
+
+    private void attemptSlot(String key, long now) {
+        var attempt = attempts.get(key);
+        if (attempt != null && attempt.expires() > now && attempt.count() >= 5)
+            throw new ApiException(429, "LOGIN_LIMITED", "登录失败次数过多，请5分钟后重试");
+        if (attempt == null && attempts.size() >= MAX_ATTEMPTS)
+            throw new ApiException(429, "LOGIN_BUSY", "登录请求繁忙，请稍后重试");
     }
 
     public User required(long id) {
