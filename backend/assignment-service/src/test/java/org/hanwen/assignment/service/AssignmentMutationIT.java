@@ -121,14 +121,12 @@ class AssignmentMutationIT {
     BatchTaskService.Write request() {
         var first =
                 db.queryForObject(
-                                "SELECT updated_at FROM assignment_task WHERE id=1",
-                                java.sql.Timestamp.class)
-                        .toLocalDateTime();
+                        "SELECT updated_at FROM assignment_task WHERE id=1",
+                        (row, _) -> row.getObject(1, java.time.LocalDateTime.class));
         var second =
                 db.queryForObject(
-                                "SELECT updated_at FROM assignment_task WHERE id=2",
-                                java.sql.Timestamp.class)
-                        .toLocalDateTime();
+                        "SELECT updated_at FROM assignment_task WHERE id=2",
+                        (row, _) -> row.getObject(1, java.time.LocalDateTime.class));
         return new BatchTaskService.Write(
                 11L,
                 "PUBLISH",
