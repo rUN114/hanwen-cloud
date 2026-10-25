@@ -13,6 +13,8 @@ import java.util.*;
 
 @Service
 public class GradebookService {
+    private record PracticeKey(long studentId, long quizId) {}
+
     final AssignmentService assignment;
     final GradePolicyMapper policies;
 
@@ -148,6 +150,15 @@ public class GradebookService {
         var submap = new HashMap<String, Submission>();
         for (var s : submitted) submap.put(s.studentId + ":" + s.assignmentId, s);
         var names = Names.read(feed.students(), assignment.directory(), assignment.remote());
+        var attemptsByPractice = new HashMap<PracticeKey, List<Contracts.ScoreBrief>>();
+        for (var attempt : feed.attempts()) {
+            if (attempt.total() > 0)
+                attemptsByPractice
+                        .computeIfAbsent(
+                                new PracticeKey(attempt.studentId(), attempt.quizId()),
+                                _ -> new ArrayList<>())
+                        .add(attempt);
+        }
         var output = new ArrayList<>();
         for (var student : feed.students()) {
             var items = new ArrayList<GradeRules.Item>();
@@ -172,31 +183,32 @@ public class GradebookService {
                 boolean awaiting = false;
                 long latestId = 0;
                 String latestStatus = "GRADED";
-                for (var a : feed.attempts())
-                    if (a.studentId() == student && a.quizId() == q.id() && a.total() > 0) {
-                        if (a.attemptId() > latestId) {
-                            latestId = a.attemptId();
-                            latestStatus = a.gradingStatus();
-                        }
-                        if ("PENDING".equals(a.gradingStatus())) {
-                            awaiting = true;
-                            continue;
-                        }
-                        if (selected == null
-                                || p.attemptRule.equals("LATEST")
-                                        && a.attemptId() > selected.attemptId()
-                                || p.attemptRule.equals("HIGHEST")
-                                        && GradeRules.percent(
-                                                                BigDecimal.valueOf(a.score()),
-                                                                BigDecimal.valueOf(a.total()))
-                                                        .compareTo(
-                                                                GradeRules.percent(
-                                                                        BigDecimal.valueOf(
-                                                                                selected.score()),
-                                                                        BigDecimal.valueOf(
-                                                                                selected.total())))
-                                                > 0) selected = a;
+                for (var a :
+                        attemptsByPractice.getOrDefault(
+                                new PracticeKey(student, q.id()), List.of())) {
+                    if (a.attemptId() > latestId) {
+                        latestId = a.attemptId();
+                        latestStatus = a.gradingStatus();
                     }
+                    if ("PENDING".equals(a.gradingStatus())) {
+                        awaiting = true;
+                        continue;
+                    }
+                    if (selected == null
+                            || p.attemptRule.equals("LATEST")
+                                    && a.attemptId() > selected.attemptId()
+                            || p.attemptRule.equals("HIGHEST")
+                                    && GradeRules.percent(
+                                                            BigDecimal.valueOf(a.score()),
+                                                            BigDecimal.valueOf(a.total()))
+                                                    .compareTo(
+                                                            GradeRules.percent(
+                                                                    BigDecimal.valueOf(
+                                                                            selected.score()),
+                                                                    BigDecimal.valueOf(
+                                                                            selected.total())))
+                                            > 0) selected = a;
+                }
                 boolean pending =
                         p.attemptRule.equals("LATEST") ? "PENDING".equals(latestStatus) : awaiting;
                 items.add(

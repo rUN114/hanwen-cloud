@@ -47,7 +47,7 @@ public class AnnotationService {
         }
     }
 
-    Object view(Annotation a, String current) {
+    Object view(Annotation a, String currentHash) {
         return Views.map(
                 "id",
                 a.id,
@@ -68,7 +68,7 @@ public class AnnotationService {
                 "createdAt",
                 a.createdAt,
                 "anchorValid",
-                a.sourceHash.equals(hash(current)));
+                a.sourceHash.equals(currentHash));
     }
 
     Contracts.ChapterText text(long enrollment, long chapter) {
@@ -79,6 +79,7 @@ public class AnnotationService {
     public Object list(long enrollment, long chapter, int page, int size) {
         int offset = Views.offset(page, size);
         var t = text(enrollment, chapter);
+        String currentHash = hash(t.content());
         var q =
                 new QueryWrapper<Annotation>()
                         .eq("student_id", Actor.current().id())
@@ -89,7 +90,7 @@ public class AnnotationService {
                 annotations
                         .selectList(q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset))
                         .stream()
-                        .map(a -> view(a, t.content()))
+                        .map(a -> view(a, currentHash))
                         .toList(),
                 page,
                 size,
@@ -124,7 +125,7 @@ public class AnnotationService {
         a.color = in.color();
         a.createdAt = a.updatedAt = Views.now();
         annotations.insert(a);
-        return view(a, t.content());
+        return view(a, a.sourceHash);
     }
 
     @Transactional

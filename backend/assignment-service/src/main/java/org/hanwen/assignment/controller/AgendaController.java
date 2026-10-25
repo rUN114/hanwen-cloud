@@ -59,6 +59,16 @@ public class AgendaController {
         }
         long total = tasks.selectCount(q);
         var rows = tasks.selectList(q.orderByAsc("deadline_at", "id").last("LIMIT 200"));
+        var submitted = new HashMap<Long, Submission>();
+        if (a.role().equals("STUDENT") && !rows.isEmpty()) {
+            submissions
+                    .selectList(
+                            new QueryWrapper<Submission>()
+                                    .select("id", "assignment_id", "status")
+                                    .eq("student_id", a.id())
+                                    .in("assignment_id", rows.stream().map(t -> t.id).toList()))
+                    .forEach(s -> submitted.put(s.assignmentId, s));
+        }
         return ApiResponse.ok(
                 Views.map(
                         "items",
@@ -67,11 +77,7 @@ public class AgendaController {
                                         t -> {
                                             var v = AssignmentService.taskView(t);
                                             if (a.role().equals("STUDENT")) {
-                                                var sub =
-                                                        submissions.selectOne(
-                                                                new QueryWrapper<Submission>()
-                                                                        .eq("assignment_id", t.id)
-                                                                        .eq("student_id", a.id()));
+                                                var sub = submitted.get(t.id);
                                                 v.put(
                                                         "submissionStatus",
                                                         sub == null ? null : sub.status);
