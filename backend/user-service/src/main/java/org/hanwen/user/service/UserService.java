@@ -268,7 +268,7 @@ public class UserService {
         if (u == null) throw ApiException.missing();
         if (u.role.equals("ADMIN")
                 && u.status.equals("ENABLED")
-                && (!in.role().equals("ADMIN") || !in.status().equals("ENABLED"))
+                && (!"ADMIN".equals(in.role()) || !"ENABLED".equals(in.status()))
                 && admins.size() <= 1) throw ApiException.conflict("不能禁用或降级最后一名启用管理员");
         if (!u.role.equals(in.role())) {
             boolean has =
