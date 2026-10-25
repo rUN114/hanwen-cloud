@@ -13,7 +13,7 @@ import StatePanel from "../../components/common/StatePanel.vue";
 import CourseLinks from "../../components/courses/CourseLinks.vue";
 const route = useRoute();
 const id = computed(() => String(route.params.courseId));
-const teacher = computed(() => session.value!.user.role === "TEACHER");
+const teacher = computed(() => session.value?.user.role === "TEACHER");
 const course = ref<Course | null>(null);
 const tab = ref(route.query.tab === "questions" ? "questions" : "notices");
 const notices = ref<Notice[]>([]);

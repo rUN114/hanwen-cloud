@@ -12,17 +12,19 @@ const total = ref(0);
 const title = ref("");
 const content = ref("");
 const { busy, error, run } = useTask();
-const key =
-  "hw:note-draft:" + session.value!.user.id + ":" + props.enrollmentId + ":" + props.chapterId;
+const key = session.value
+  ? "hw:note-draft:" + session.value.user.id + ":" + props.enrollmentId + ":" + props.chapterId
+  : null;
 try {
-  const d = JSON.parse(sessionStorage.getItem(key) || "null");
+  const d = key ? JSON.parse(sessionStorage.getItem(key) || "null") : null;
   if (d) {
     title.value = d.title;
     content.value = d.content;
   }
 } catch {}
 watch([title, content], () => {
-  sessionStorage.setItem(key, JSON.stringify({ title: title.value, content: content.value }));
+  if (key)
+    sessionStorage.setItem(key, JSON.stringify({ title: title.value, content: content.value }));
 });
 async function fetchRows() {
   const p = await api<Page<Note>>(
@@ -45,7 +47,7 @@ function save() {
     });
     title.value = "";
     content.value = "";
-    sessionStorage.removeItem(key);
+    if (key) sessionStorage.removeItem(key);
     await fetchRows();
     ElMessage.success("本章札记已保存");
   });

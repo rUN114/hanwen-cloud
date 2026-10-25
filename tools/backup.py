@@ -1,5 +1,5 @@
 """Private SQL and immutable resource backup. Does not overwrite or delete backups."""
-import argparse, datetime, hashlib, json, os, subprocess, tempfile, uuid, zipfile
+import argparse, contextlib, datetime, hashlib, json, os, subprocess, tempfile, uuid, zipfile
 from pathlib import Path
 
 def digest(path):
@@ -24,6 +24,33 @@ def verify(path):
         if 'database.sql' not in expected: raise ValueError('SQL snapshot missing')
         return manifest
 
+
+LOCK_FILE = '.hanwen-maintenance.lock'
+
+
+@contextlib.contextmanager
+def exclusive_storage(storage):
+    # 与Java FileChannel的[0,1)字节范围锁互通，不使用另一套flock协议。
+    with (storage / LOCK_FILE).open('a+b') as lock:
+        lock.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.lockf(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB, 1, 0)
+        except OSError as error:
+            raise RuntimeError('Storage maintenance is busy or unavailable; backup not started') from error
+        try:
+            yield
+        finally:
+            lock.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.lockf(lock.fileno(), fcntl.LOCK_UN, 1, 0)
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verify',type=Path)
@@ -37,14 +64,19 @@ def main():
     if not args.client_file or not args.client_file.is_file() or not args.storage or not args.storage.is_dir() or not args.destination:
         parser.error('Backup requires an existing private client-file, storage directory and destination directory')
     os.umask(0o077);args.destination.mkdir(parents=True,exist_ok=True)
+    with exclusive_storage(args.storage):
+        create_backup(args)
+
+
+def create_backup(args):
     mysql=args.mysql_dir/('mysql.exe' if os.name=='nt' else 'mysql')
     dump=args.mysql_dir/('mysqldump.exe' if os.name=='nt' else 'mysqldump')
     if str(args.mysql_dir)=='.': mysql='mysql';dump='mysqldump'
-    query="SELECT storage_name,sha256,bytes FROM hw_course.course_resource"
+    query="SELECT storage_name,sha256,bytes FROM hw_course.course_resource WHERE status='ACTIVE' AND storage_name IS NOT NULL"
     existence_sql="SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='hw_assignment' AND table_name='assignment_attachment'"
     attachment_table=subprocess.run([str(mysql),'--defaults-file='+str(args.client_file.resolve()),'--batch','--skip-column-names','--execute='+existence_sql],capture_output=True,check=True).stdout.strip()
     if attachment_table==b'1':
-        query+=" UNION ALL SELECT storage_name,sha256,bytes FROM hw_assignment.assignment_attachment"
+        query+=" UNION ALL SELECT storage_name,sha256,bytes FROM hw_assignment.assignment_attachment WHERE status='ACTIVE' AND storage_name IS NOT NULL"
     metadata=subprocess.run([str(mysql),'--defaults-file='+str(args.client_file.resolve()),'--batch','--skip-column-names','--execute='+query],capture_output=True,check=True).stdout.decode('utf8')
     for line in metadata.splitlines():
         name,sha,size=line.split('\t');p=args.storage/name
@@ -57,6 +89,7 @@ def main():
         subprocess.run([str(dump),'--defaults-file='+str(args.client_file.resolve()),'--single-transaction','--no-tablespaces','--set-gtid-purged=OFF','--column-statistics=0','--result-file='+str(sql),'--databases','hw_user','hw_course','hw_learning','hw_assignment'],capture_output=True,check=True)
         files=[('database.sql',sql)]
         for p in args.storage.iterdir():
+            if p.name == LOCK_FILE: continue
             if p.is_symlink() or not p.is_file():raise ValueError('Storage must contain regular resource files only')
             files.append(('uploads/'+p.name,p))
         manifest={'format':1,'at':at,'scope':'four databases and complete immutable upload directory','keyBackupRequiredSeparately':True,'files':[{'path':n,'bytes':p.stat().st_size,'sha256':digest(p)} for n,p in files]}

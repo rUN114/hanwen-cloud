@@ -18,13 +18,14 @@ const total = ref(0);
 const content = ref("");
 const { busy, error, run } = useTask();
 const writable = computed(() => course.value?.status === "PUBLISHED");
-const canResolve = computed(
-  () =>
-    q.value?.studentId === session.value!.user.id ||
-    (session.value!.user.role === "TEACHER" &&
-      course.value?.accessRole !== "NONE" &&
-      !!course.value?.accessRole),
-);
+const canResolve = computed(() => {
+  const user = session.value?.user;
+  if (!user || !q.value) return false;
+  return (
+    q.value.studentId === user.id ||
+    (user.role === "TEACHER" && course.value?.accessRole !== "NONE" && !!course.value?.accessRole)
+  );
+});
 async function fetchReplies() {
   const p = await api<Page<Reply>>(
     "/api/questions/" + route.params.id + "/replies?page=" + page.value,

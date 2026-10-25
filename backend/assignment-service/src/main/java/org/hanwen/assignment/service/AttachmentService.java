@@ -176,6 +176,15 @@ public class AttachmentService {
 
     @Scheduled(fixedDelay = 21_600_000, initialDelay = 60_000)
     void purgeRemovedAttachments() {
+        try {
+            if (!StorageMaintenance.tryRunExclusive(storage, this::purgeExpiredFiles))
+                LOG.debug("备份或其他回收正在使用上传目录，本轮附件回收跳过");
+        } catch (IOException e) {
+            LOG.warn("无法锁定上传目录，本轮附件回收未执行", e);
+        }
+    }
+
+    private void purgeExpiredFiles() {
         // 按主键推进本轮批次，坏文件留待下次重试，不阻挡后面的正常记录。
         long after = 0;
         var cutoff = Views.now().minusDays(30);

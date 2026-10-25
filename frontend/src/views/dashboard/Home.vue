@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
-import { session } from "../../stores/session";
+import { session, reauthUser } from "../../stores/session";
 import { api } from "../../api/client";
 import { useTask, time } from "../../composables/useTask";
 import type { Page, Course, Enrollment, Task, Work } from "../../types/models";
 import PageHeading from "../../components/common/PageHeading.vue";
 import StatePanel from "../../components/common/StatePanel.vue";
-const role = computed(() => session.value!.user.role);
+const role = computed(() => session.value?.user.role ?? reauthUser.value?.role);
 const summary = ref<Record<string, number>>({});
 const courses = ref<Course[]>([]);
 const discover = ref<Course[]>([]);
@@ -83,7 +83,7 @@ onMounted(load);
   />
   <section
     class="desk-hero art-scene"
-    :class="'desk-' + role.toLowerCase()"
+    :class="role ? 'desk-' + role.toLowerCase() : undefined"
   >
     <div>
       <span class="eyebrow">

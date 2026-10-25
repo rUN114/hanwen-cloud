@@ -5,6 +5,7 @@ import { api } from "../../api/client";
 import { session } from "../../stores/session";
 import { useTask } from "../../composables/useTask";
 import { download } from "../../utils/export";
+import { safeUrl } from "../../utils/document";
 import type { Work } from "../../types/models";
 import PageHeading from "../../components/common/PageHeading.vue";
 import StatePanel from "../../components/common/StatePanel.vue";
@@ -14,7 +15,7 @@ const favorited = ref(false);
 const vertical = ref(false);
 const large = ref(false);
 const compare = ref(true);
-const student = computed(() => session.value!.user.role === "STUDENT");
+const student = computed(() => session.value?.user.role === "STUDENT");
 const poem = computed(() => ["诗", "词"].includes(work.value?.genre || ""));
 const { busy, error, run } = useTask();
 function load() {
@@ -170,7 +171,7 @@ function exportWork() {
           </RouterLink>
           <a
             v-if="x.sourceUrl"
-            :href="x.sourceUrl"
+            :href="safeUrl(x.sourceUrl) || undefined"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -185,7 +186,7 @@ function exportWork() {
         </p>
         <a
           v-if="work.sourceUrl"
-          :href="work.sourceUrl"
+          :href="safeUrl(work.sourceUrl) || undefined"
           target="_blank"
           rel="noopener noreferrer"
         >
