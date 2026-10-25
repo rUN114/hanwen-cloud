@@ -38,9 +38,9 @@ jobs:
           actual=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -Nse "SELECT CONCAT(@@session.time_zone,'|',@@transaction_isolation,'|',TRIM(TRAILING '/' FROM @@datadir))")
           test "$actual" = '+08:00|REPEATABLE-READ|/var/lib/mysql'
           docker exec "$MYSQL_CONTAINER" mysql -uroot -Nse "SELECT COUNT(*) AS timezone_rows FROM mysql.time_zone_name"
-          docker exec -i "$MYSQL_CONTAINER" mysql -uroot --default-character-set=utf8mb4 < database/assignment.sql
+          python3 tests/schema_migrations_test.py --mysql-container "$MYSQL_CONTAINER" --data-dir /var/lib/mysql
       - name: Verify concurrent submission and attachment retention
-        run: mvn -B -ntp -f backend/pom.xml -pl assignment-service -am verify -Pit-db -Dhanwen.test.dataDir=/var/lib/mysql
+        run: mvn -B -ntp -f backend/pom.xml -pl course-service,assignment-service -am verify -Pit-db -Dhanwen.test.dataDir=/var/lib/mysql
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20

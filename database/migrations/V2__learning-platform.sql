@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 USE hw_user;
 SET @hw_sql=IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='hw_user' AND table_name='sys_user' AND column_name='email')=0,'ALTER TABLE sys_user ADD COLUMN email VARCHAR(120) NULL','SELECT 1');
 PREPARE hw_stmt FROM @hw_sql;EXECUTE hw_stmt;DEALLOCATE PREPARE hw_stmt;

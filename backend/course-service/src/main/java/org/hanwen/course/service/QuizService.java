@@ -191,7 +191,7 @@ public class QuizService {
         } else {
             q = quizzes.lock(quizId);
             if (q == null || q.courseId != courseId) throw ApiException.missing();
-            Names.version(in.expectedVersion(), q.version);
+            Names.version(q.version, in.expectedVersion());
             if (!q.status.equals("DRAFT")) throw ApiException.conflict("已发布练习的内容冻结");
             if (!q.chapterId.equals(in.chapterId())) throw ApiException.bad("练习不能移换章节");
             q.version++;
@@ -218,7 +218,7 @@ public class QuizService {
     @Transactional
     public Object question(long id, Long questionId, QuestionWrite in) {
         var q = ownedLock(id);
-        Names.version(in.expectedVersion(), q.version);
+        Names.version(q.version, in.expectedVersion());
         if (!q.status.equals("DRAFT")) throw ApiException.conflict("只能编辑草稿练习");
         QuizQuestion x;
         if (questionId == null) {
@@ -257,7 +257,7 @@ public class QuizService {
     @Transactional
     public void deleteQuestion(long id, long questionId, int version) {
         var q = ownedLock(id);
-        Names.version(version, q.version);
+        Names.version(q.version, version);
         if (!q.status.equals("DRAFT")) throw ApiException.conflict("只能编辑草稿练习");
         var x = questions.lock(questionId);
         if (x == null || x.quizId != id) throw ApiException.missing();
@@ -270,7 +270,7 @@ public class QuizService {
     @Transactional
     public Object state(long id, State in) {
         var q = ownedLock(id);
-        Names.version(in.expectedVersion(), q.version);
+        Names.version(q.version, in.expectedVersion());
         if (!(q.status.equals("DRAFT") && "PUBLISHED".equals(in.status())
                 || q.status.equals("PUBLISHED") && "ARCHIVED".equals(in.status())))
             throw ApiException.conflict("练习状态已变化");
@@ -287,11 +287,11 @@ public class QuizService {
     @Transactional
     public Object importQuestion(long id, ImportQuestion in) {
         var q = ownedLock(id);
-        Names.version(in.expectedVersion(), q.version);
+        Names.version(q.version, in.expectedVersion());
         if (!q.status.equals("DRAFT")) throw ApiException.conflict("只能向草稿组卷");
         if (in.bankId() == null) throw ApiException.bad("请选择题库题目");
         var source = bank.owned(in.bankId(), true);
-        Names.version(in.bankVersion(), source.version);
+        Names.version(source.version, in.bankVersion());
         if (!source.status.equals("ACTIVE")) throw ApiException.conflict("题库题目已归档");
         if (items(id).size() >= 100) throw ApiException.bad("每份练习最多100题");
         var x = new QuizQuestion();

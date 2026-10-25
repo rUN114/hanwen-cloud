@@ -2,11 +2,20 @@
 USE hw_course;
 DROP PROCEDURE IF EXISTS p2_column;
 DROP PROCEDURE IF EXISTS p2_option_checks;
+DROP PROCEDURE IF EXISTS p2_option_width;
 DELIMITER $$
 CREATE PROCEDURE p2_column(IN dbn VARCHAR(64), IN tn VARCHAR(64), IN cn VARCHAR(64), IN definition TEXT)
 BEGIN
  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema=dbn AND table_name=tn AND column_name=cn) THEN
   SET @p2_sql=CONCAT('ALTER TABLE `',dbn,'`.`',tn,'` ADD COLUMN `',cn,'` ',definition);
+  PREPARE p2_stmt FROM @p2_sql; EXECUTE p2_stmt; DEALLOCATE PREPARE p2_stmt;
+ END IF;
+END$$
+CREATE PROCEDURE p2_option_width(IN dbn VARCHAR(64), IN tn VARCHAR(64), IN cn VARCHAR(64))
+BEGIN
+ IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=dbn AND table_name=tn AND column_name=cn
+           AND data_type IN ('char','varchar') AND character_maximum_length<4) THEN
+  SET @p2_sql=CONCAT('ALTER TABLE `',dbn,'`.`',tn,'` MODIFY `',cn,'` VARCHAR(4) NOT NULL');
   PREPARE p2_stmt FROM @p2_sql; EXECUTE p2_stmt; DEALLOCATE PREPARE p2_stmt;
  END IF;
 END$$
@@ -18,6 +27,9 @@ BEGIN
  JOIN information_schema.check_constraints cc ON tc.constraint_schema=cc.constraint_schema AND tc.constraint_name=cc.constraint_name
  WHERE tc.table_schema=dbn AND tc.table_name=tn AND (cc.check_clause LIKE '%correct_option%' OR cc.check_clause LIKE '%selected_option%');
  DECLARE CONTINUE HANDLER FOR NOT FOUND SET done=1;
+ IF EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema=dbn AND table_name=tn
+           AND column_name IN ('correct_option','selected_option') AND data_type IN ('char','varchar')
+           AND character_maximum_length<=4) THEN
  OPEN checks;
  repeat_checks: LOOP
   FETCH checks INTO n;
@@ -26,6 +38,7 @@ BEGIN
   PREPARE p2_stmt FROM @p2_sql; EXECUTE p2_stmt; DEALLOCATE PREPARE p2_stmt;
  END LOOP;
  CLOSE checks;
+ END IF;
 END$$
 DELIMITER ;
 CALL hw_course.p2_column('hw_course','chapter_quiz','opens_at','DATETIME(3) NULL');
@@ -42,12 +55,13 @@ CALL hw_course.p2_column('hw_learning','quiz_attempt','quiz_version','INT NULL')
 CALL hw_course.p2_column('hw_learning','quiz_attempt_item','question_type','VARCHAR(16) NOT NULL DEFAULT ''SINGLE''');
 CALL hw_course.p2_column('hw_learning','quiz_attempt_item','points','INT NOT NULL DEFAULT 1');
 CALL hw_course.p2_option_checks('hw_course','quiz_question');
-ALTER TABLE `hw_course`.`quiz_question` MODIFY `correct_option` VARCHAR(4) NOT NULL;
+CALL hw_course.p2_option_width('hw_course','quiz_question','correct_option');
 CALL hw_course.p2_option_checks('hw_learning','quiz_attempt_item');
-ALTER TABLE `hw_learning`.`quiz_attempt_item` MODIFY `correct_option` VARCHAR(4) NOT NULL;
-ALTER TABLE `hw_learning`.`quiz_attempt_item` MODIFY `selected_option` VARCHAR(4) NOT NULL;
+CALL hw_course.p2_option_width('hw_learning','quiz_attempt_item','correct_option');
+CALL hw_course.p2_option_width('hw_learning','quiz_attempt_item','selected_option');
 DROP PROCEDURE hw_course.p2_column;
 DROP PROCEDURE hw_course.p2_option_checks;
+DROP PROCEDURE hw_course.p2_option_width;
 USE hw_course;
 CREATE TABLE IF NOT EXISTS question_bank (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,teacher_id BIGINT UNSIGNED NOT NULL,

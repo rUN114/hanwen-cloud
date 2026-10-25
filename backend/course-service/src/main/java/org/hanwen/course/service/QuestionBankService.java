@@ -100,7 +100,7 @@ public class QuestionBankService {
         Views.role("TEACHER");
         var q = id == null ? new BankQuestion() : owned(id, true);
         if (id != null) {
-            Names.version(in.expectedVersion(), q.version);
+            Names.version(q.version, in.expectedVersion());
             if (!q.status.equals("ACTIVE")) throw ApiException.conflict("请先恢复归档题目");
             q.version++;
         } else {
@@ -130,7 +130,7 @@ public class QuestionBankService {
     @Transactional
     public Object state(long id, State in) {
         var q = owned(id, true);
-        Names.version(in.expectedVersion(), q.version);
+        Names.version(q.version, in.expectedVersion());
         if (!java.util.Set.of("ACTIVE", "ARCHIVED").contains(String.valueOf(in.status())))
             throw ApiException.bad("题库状态不合法");
         q.status = in.status();

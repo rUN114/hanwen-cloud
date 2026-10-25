@@ -365,7 +365,7 @@ public class PracticeService {
         expire(r);
         if (!r.status.equals("ACTIVE")) return runView(r);
         PracticeRules.available(current, Views.now());
-        Names.version(in.expectedVersion(), r.version);
+        Names.version(r.version, in.expectedVersion());
         if (in.answers() == null || in.answers().size() > 100) throw ApiException.bad("草稿最多100题");
         var answers = new HashMap<Long, String>();
         for (var a : in.answers()) {

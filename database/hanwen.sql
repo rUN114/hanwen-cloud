@@ -391,7 +391,7 @@ CREATE TABLE IF NOT EXISTS `course_resource` (
 
   `original_name` varchar(160) NOT NULL,
 
-  `storage_name` varchar(60) NOT NULL,
+  `storage_name` varchar(60) DEFAULT NULL,
 
   `mime_type` varchar(80) NOT NULL,
 
@@ -402,8 +402,10 @@ CREATE TABLE IF NOT EXISTS `course_resource` (
   `status` varchar(16) NOT NULL DEFAULT 'ACTIVE',
 
   `created_at` datetime(3) NOT NULL,
+  `removed_at` datetime(3) DEFAULT NULL,
 
   PRIMARY KEY (`id`),
+  KEY `idx_resource_purge` (`status`,`removed_at`,`id`),
 
   KEY `idx_resource_course` (`course_id`,`chapter_id`,`status`,`id`),
 

@@ -14,10 +14,14 @@ public class ResourceFile {
     public String title;
     public String description;
     public String originalName;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String storageName;
+
     public String mimeType;
     public Long bytes;
     public String sha256;
     public String status;
     public LocalDateTime createdAt;
+    public LocalDateTime removedAt;
 }

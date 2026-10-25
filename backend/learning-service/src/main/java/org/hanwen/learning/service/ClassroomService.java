@@ -210,7 +210,7 @@ public class ClassroomService {
     public Object update(long id, Write in) {
         var r = required(id, true);
         editor(r);
-        Names.version(in.expectedVersion(), r.version);
+        Names.version(r.version, in.expectedVersion());
         if (!Set.of("ACTIVE", "CLOSED").contains(String.valueOf(in.status())))
             throw ApiException.bad("班级状态不合法");
         if (in.status().equals("ACTIVE") && !course(r).status().equals("PUBLISHED"))
@@ -227,7 +227,7 @@ public class ClassroomService {
         var r = required(id, true);
         editor(r);
         active(r);
-        Names.version(version, r.version);
+        Names.version(r.version, version);
         r.joinCode = code();
         r.version++;
         r.updatedAt = Views.now();

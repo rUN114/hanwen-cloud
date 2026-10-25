@@ -84,7 +84,8 @@ public class AssignmentExtrasService {
             d.studentId = Actor.current().id();
             d.version = 0;
         } else {
-            Names.version(in.expectedVersion(), d.version);
+            if (Objects.equals(in.expectedVersion(), -1)) throw ApiException.conflict("草稿已变化，请刷新");
+            Names.version(d.version, in.expectedVersion());
             d.version++;
         }
         d.answerText = in.answerText();
