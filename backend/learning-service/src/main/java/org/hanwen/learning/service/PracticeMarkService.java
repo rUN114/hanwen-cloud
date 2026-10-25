@@ -7,7 +7,8 @@ import org.hanwen.learning.client.CourseClient;
 import org.hanwen.learning.mapper.*;
 import org.hanwen.learning.model.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
@@ -19,6 +20,7 @@ public class PracticeMarkService {
     final CourseClient courses;
     final Remote remote;
     final DirectoryClient directory;
+    final TransactionTemplate transaction;
 
     public PracticeMarkService(
             QuizAttemptMapper a,
@@ -26,13 +28,15 @@ public class PracticeMarkService {
             QuizMarkEventMapper e,
             CourseClient c,
             Remote r,
-            DirectoryClient d) {
+            DirectoryClient d,
+            PlatformTransactionManager manager) {
         attempts = a;
         items = i;
         events = e;
         courses = c;
         remote = r;
         directory = d;
+        transaction = new TransactionTemplate(manager);
     }
 
     public record Item(Long id, Integer score, String comment) {}
@@ -96,14 +100,30 @@ public class PracticeMarkService {
         var a = required(id, false);
         teacher(a);
         var rows = items(id);
-        var name = Names.read(List.of(a.studentId), directory, remote);
-        var log =
-                events.selectList(
-                        new QueryWrapper<QuizMarkEvent>()
-                                .eq("attempt_id", id)
-                                .orderByDesc("id")
-                                .last("LIMIT 50"));
-        var graders = Names.read(log.stream().map(e -> e.teacherId).toList(), directory, remote);
+        var log = history(id);
+        return detailView(a, rows, log, displayNames(a, log));
+    }
+
+    private List<QuizMarkEvent> history(long id) {
+        return events.selectList(
+                new QueryWrapper<QuizMarkEvent>()
+                        .eq("attempt_id", id)
+                        .orderByDesc("id")
+                        .last("LIMIT 50"));
+    }
+
+    private Map<Long, String> displayNames(QuizAttempt a, List<QuizMarkEvent> log) {
+        var ids = new ArrayList<Long>(log.stream().map(e -> e.teacherId).toList());
+        ids.add(a.studentId);
+        ids.add(Actor.current().id());
+        return Names.read(ids, directory, remote);
+    }
+
+    private Object detailView(
+            QuizAttempt a,
+            List<AttemptItem> rows,
+            List<QuizMarkEvent> log,
+            Map<Long, String> names) {
         return Views.map(
                 "id",
                 a.id,
@@ -112,7 +132,7 @@ public class PracticeMarkService {
                 "quizId",
                 a.quizId,
                 "studentName",
-                name.getOrDefault(a.studentId, "学生"),
+                names.getOrDefault(a.studentId, "学生"),
                 "score",
                 "PENDING".equals(a.gradingStatus) ? null : a.score,
                 "total",
@@ -163,7 +183,7 @@ public class PracticeMarkService {
                                                 "id",
                                                 e.id,
                                                 "teacherName",
-                                                graders.getOrDefault(e.teacherId, "教师"),
+                                                names.getOrDefault(e.teacherId, "教师"),
                                                 "score",
                                                 e.score,
                                                 "version",
@@ -175,10 +195,17 @@ public class PracticeMarkService {
                         .toList());
     }
 
-    @Transactional
     public Object mark(long id, Mark in) {
+        var initial = required(id, false);
+        teacher(initial);
+        var names = displayNames(initial, history(id));
+        return transaction.execute(_ -> markLocal(id, in, initial, names));
+    }
+
+    private Object markLocal(long id, Mark in, QuizAttempt initial, Map<Long, String> names) {
         var a = required(id, true);
-        teacher(a);
+        if (!a.courseId.equals(initial.courseId) || !a.quizId.equals(initial.quizId))
+            throw ApiException.conflict("所属练习已改变，请刷新");
         Names.version(a.gradingVersion, in.expectedVersion());
         var rows = items(id);
         var written = rows.stream().filter(x -> QuestionRules.manual(x.questionType)).toList();
@@ -233,6 +260,6 @@ public class PracticeMarkService {
                                                                 x.teacherComment))
                                         .toList());
         events.insert(event);
-        return detail(id);
+        return detailView(a, rows, history(id), names);
     }
 }

@@ -102,19 +102,79 @@ public class PracticeService {
         }
     }
 
-    boolean released(Contracts.QuizSnapshot q) {
-        var last = latestRun(q.quizId());
+    private boolean released(
+            Contracts.QuizRelease q, long used, QuizRun last, java.time.LocalDateTime now) {
         return !q.status().equals("PUBLISHED")
                 || !q.courseStatus().equals("PUBLISHED")
-                || PracticeRules.expired(q.closesAt(), Views.now())
-                || used(q.quizId()) >= q.maxAttempts()
+                || PracticeRules.expired(q.closesAt(), now)
+                || used >= q.maxAttempts()
                         && (last == null
                                 || !last.status.equals("ACTIVE")
-                                || PracticeRules.expired(last.deadlineAt, Views.now()));
+                                || PracticeRules.expired(last.deadlineAt, now));
+    }
+
+    boolean released(Contracts.QuizSnapshot q) {
+        return released(
+                new Contracts.QuizRelease(
+                        q.quizId(), q.status(), q.courseStatus(), q.closesAt(), q.maxAttempts()),
+                used(q.quizId()),
+                latestRun(q.quizId()),
+                Views.now());
     }
 
     public boolean reviewReleased(long quiz) {
         return released(snapshot(quiz));
+    }
+
+    Map<Long, Boolean> reviewReleased(Collection<Long> quizzes) {
+        Views.role("STUDENT");
+        var ids = quizzes.stream().distinct().toList();
+        var allowed = new HashMap<Long, Boolean>();
+        var now = Views.now();
+        for (int offset = 0; offset < ids.size(); offset += 100) {
+            var batch = ids.subList(offset, Math.min(offset + 100, ids.size()));
+            String query =
+                    batch.stream()
+                            .map(Object::toString)
+                            .collect(java.util.stream.Collectors.joining(","));
+            var metadata = remote.call("practice-releases", () -> courses.releases(query));
+            var used = new HashMap<Long, Long>();
+            var latestIds = new HashMap<Long, Long>();
+            runs.selectMaps(
+                            new QueryWrapper<QuizRun>()
+                                    .select("quiz_id", "COUNT(*) AS n", "MAX(id) AS latest")
+                                    .eq("student_id", Actor.current().id())
+                                    .in("quiz_id", batch)
+                                    .groupBy("quiz_id"))
+                    .forEach(
+                            row -> {
+                                long quiz = ((Number) row.get("quiz_id")).longValue();
+                                used.put(quiz, ((Number) row.get("n")).longValue());
+                                latestIds.put(quiz, ((Number) row.get("latest")).longValue());
+                            });
+            attempts.selectMaps(
+                            new QueryWrapper<QuizAttempt>()
+                                    .select("quiz_id", "COUNT(*) AS n")
+                                    .eq("student_id", Actor.current().id())
+                                    .in("quiz_id", batch)
+                                    .isNull("run_id")
+                                    .groupBy("quiz_id"))
+                    .forEach(
+                            row ->
+                                    used.merge(
+                                            ((Number) row.get("quiz_id")).longValue(),
+                                            ((Number) row.get("n")).longValue(),
+                                            Long::sum));
+            var last = new HashMap<Long, QuizRun>();
+            if (!latestIds.isEmpty())
+                runs.selectByIds(latestIds.values()).forEach(run -> last.put(run.quizId, run));
+            for (var q : metadata)
+                allowed.put(
+                        q.quizId(),
+                        released(q, used.getOrDefault(q.quizId(), 0L), last.get(q.quizId()), now));
+            if (!allowed.keySet().containsAll(batch)) throw ApiException.missing();
+        }
+        return allowed;
     }
 
     Map<String, Object> runView(QuizRun r) {

@@ -97,7 +97,8 @@ class SubmitConcurrencyIT {
                 CourseClient courses,
                 LearningClient learning,
                 DraftMapper drafts,
-                GradeHistoryMapper history) {
+                GradeHistoryMapper history,
+                PlatformTransactionManager manager) {
             return new AssignmentService(
                     tasks,
                     submissions,
@@ -107,7 +108,8 @@ class SubmitConcurrencyIT {
                     new Remote(),
                     drafts,
                     history,
-                    mock(DirectoryClient.class));
+                    mock(DirectoryClient.class),
+                    manager);
         }
     }
 

@@ -28,6 +28,9 @@ class DraftVersionTest {
         var submissions = mock(SubmissionMapper.class);
         var task = new Task();
         task.id = 1L;
+        task.courseId = 11L;
+        task.status = "PUBLISHED";
+        when(tasks.selectById(1L)).thenReturn(task);
         when(tasks.lock(1)).thenReturn(task);
         var draft = new Draft();
         draft.id = 1L;
@@ -41,7 +44,8 @@ class DraftVersionTest {
                         submissions,
                         null,
                         null,
-                        null);
+                        null,
+                        mock(org.springframework.transaction.PlatformTransactionManager.class));
         var error =
                 assertThrows(
                         ApiException.class,

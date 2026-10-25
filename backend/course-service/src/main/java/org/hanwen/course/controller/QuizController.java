@@ -64,6 +64,11 @@ public class QuizController {
         return ApiResponse.ok(quizService.state(id, in));
     }
 
+    @GetMapping("/internal/quizzes/releases")
+    public java.util.List<Contracts.QuizRelease> releases(@RequestParam java.util.List<Long> ids) {
+        return quizService.releases(ids);
+    }
+
     @GetMapping("/internal/quizzes/{id}/snapshot")
     public Contracts.QuizSnapshot snapshot(@PathVariable long id) {
         return quizService.snapshot(id);

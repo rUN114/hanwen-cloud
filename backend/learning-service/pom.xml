@@ -67,4 +67,36 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>it-db</id>
+            <properties>
+                <hanwen.test.jdbcUrl>jdbc:mysql://127.0.0.1:14327/hw_learning?connectionTimeZone=%2B08:00&amp;forceConnectionTimeZoneToSession=true</hanwen.test.jdbcUrl>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <failIfNoTests>true</failIfNoTests>
+                            <includes><include>**/*IT.java</include></includes>
+                            <systemPropertyVariables>
+                                <hanwen.test.jdbcUrl>${hanwen.test.jdbcUrl}</hanwen.test.jdbcUrl>
+                                <hanwen.test.dataDir>${hanwen.test.dataDir}</hanwen.test.dataDir>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

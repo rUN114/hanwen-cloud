@@ -6,7 +6,8 @@ import org.hanwen.common.*;
 import org.hanwen.learning.mapper.*;
 import org.hanwen.learning.model.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
@@ -15,11 +16,17 @@ public class ReviewService {
     final ReviewCardMapper cards;
     final AttemptItemMapper items;
     final PracticeService practice;
+    final TransactionTemplate transaction;
 
-    public ReviewService(ReviewCardMapper c, AttemptItemMapper i, PracticeService p) {
+    public ReviewService(
+            ReviewCardMapper c,
+            AttemptItemMapper i,
+            PracticeService p,
+            PlatformTransactionManager manager) {
         cards = c;
         items = i;
         practice = p;
+        transaction = new TransactionTemplate(manager);
     }
 
     public record Answer(String choice, Integer expectedVersion) {}
@@ -83,10 +90,10 @@ public class ReviewService {
                 cards.selectList(
                         q.orderByAsc("next_review_at").orderByAsc("id").last("LIMIT 5001"));
         if (all.size() > 5000) throw ApiException.bad("温故记录过多，请按课程筛选");
-        var allowed = new HashMap<Long, Boolean>();
+        var allowed = practice.reviewReleased(all.stream().map(c -> c.quizId).toList());
         var visible = new ArrayList<ReviewCard>();
         for (var c : all) {
-            boolean show = allowed.computeIfAbsent(c.quizId, practice::reviewReleased);
+            boolean show = allowed.get(c.quizId);
             if (show) visible.add(c);
         }
         var now = Views.now();
@@ -100,14 +107,18 @@ public class ReviewService {
                                                         && !c.mastered
                                                         && !c.nextReviewAt.isAfter(now))
                         .toList();
+        var pageCards = selected.stream().skip(offset).limit(size).toList();
+        var frozen = new HashMap<Long, AttemptItem>();
+        if (!pageCards.isEmpty())
+            items.selectByIds(pageCards.stream().map(c -> c.attemptItemId).distinct().toList())
+                    .forEach(i -> frozen.put(i.id, i));
         var rows =
-                selected.stream()
-                        .skip(offset)
-                        .limit(size)
+                pageCards.stream()
                         .map(
                                 c -> {
                                     var v = brief(c);
-                                    var i = frozen(c);
+                                    var i = frozen.get(c.attemptItemId);
+                                    if (i == null) throw ApiException.missing();
                                     v.put("prompt", i.prompt);
                                     v.put("questionType", i.questionType);
                                     return v;
@@ -160,10 +171,16 @@ public class ReviewService {
         return v;
     }
 
-    @Transactional
     public Object answer(long id, Answer in) {
+        var initial = owned(id, false);
+        released(initial);
+        return transaction.execute(_ -> answerLocal(id, in, initial));
+    }
+
+    private Object answerLocal(long id, Answer in, ReviewCard initial) {
         var c = owned(id, true);
-        released(c);
+        if (!c.quizId.equals(initial.quizId) || !c.attemptItemId.equals(initial.attemptItemId))
+            throw ApiException.conflict("复习题目已改变，请刷新");
         Names.version(c.version, in.expectedVersion());
         var i = frozen(c);
         if (c.nextReviewAt.isAfter(Views.now())) throw ApiException.conflict("尚未到计划复习时间，可先回看题面");

@@ -53,7 +53,16 @@ class AssignmentBatchTest {
         when(grades.selectList(any())).thenReturn(List.of(grade));
         var service =
                 new AssignmentService(
-                        tasks, submissions, grades, null, null, null, null, null, null);
+                        tasks,
+                        submissions,
+                        grades,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        mock(org.springframework.transaction.PlatformTransactionManager.class));
         var result = (Map<?, ?>) service.mine(1, 10, null, null);
         var rows = (List<Map<?, ?>>) result.get("items");
         assertEquals(2L, result.get("total"));
@@ -72,7 +81,17 @@ class AssignmentBatchTest {
         var tasks = mock(TaskMapper.class);
         var submissions = mock(SubmissionMapper.class);
         var grades = mock(GradeMapper.class);
-        new AssignmentService(tasks, submissions, grades, null, null, null, null, null, null)
+        new AssignmentService(
+                        tasks,
+                        submissions,
+                        grades,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        mock(org.springframework.transaction.PlatformTransactionManager.class))
                 .mine(1, 10, null, null);
         verifyNoInteractions(tasks, grades);
     }
@@ -98,7 +117,15 @@ class AssignmentBatchTest {
         b.content = "请检查";
         when(reminders.selectList(any())).thenReturn(List.of(a, b));
         when(tasks.selectByIds(anyCollection())).thenReturn(List.of(task()));
-        var result = (Map<?, ?>) new ReminderService(assignment, reminders).feed();
+        var result =
+                (Map<?, ?>)
+                        new ReminderService(
+                                        assignment,
+                                        reminders,
+                                        mock(
+                                                org.springframework.transaction
+                                                        .PlatformTransactionManager.class))
+                                .feed();
         assertEquals(2, ((List<?>) result.get("items")).size());
         verify(tasks).selectByIds(List.of(7L));
         verify(assignment, never()).task(anyLong());
@@ -112,6 +139,7 @@ class AssignmentBatchTest {
         var submissions = mock(SubmissionMapper.class);
         var reminders = mock(ReminderMapper.class);
         when(assignment.lockedTask(7)).thenReturn(task());
+        when(assignment.task(7)).thenReturn(task());
         when(assignment.course(11))
                 .thenReturn(new Contracts.CourseValidation(11, 1, "PUBLISHED", 1, "课程", "OWNER"));
         when(assignment.remote()).thenReturn(new Remote());
@@ -123,7 +151,12 @@ class AssignmentBatchTest {
         when(reminders.selectList(any())).thenReturn(List.of(prior));
         var result =
                 (Map<?, ?>)
-                        new ReminderService(assignment, reminders)
+                        new ReminderService(
+                                        assignment,
+                                        reminders,
+                                        mock(
+                                                org.springframework.transaction
+                                                        .PlatformTransactionManager.class))
                                 .send(7, new ReminderService.Send(List.of(3L, 4L, 4L), "请提交"));
         assertEquals(1, result.get("sent"));
         assertEquals(1, result.get("alreadySentToday"));

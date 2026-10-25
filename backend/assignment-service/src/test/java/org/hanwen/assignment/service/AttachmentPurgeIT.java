@@ -27,9 +27,12 @@ class AttachmentPurgeIT {
 
         @Bean
         AttachmentService attachments(
-                AssignmentService assignments, AttachmentMapper mapper, Path uploadDirectory)
+                AssignmentService assignments,
+                AttachmentMapper mapper,
+                Path uploadDirectory,
+                org.springframework.transaction.PlatformTransactionManager manager)
                 throws IOException {
-            return new AttachmentService(assignments, mapper, uploadDirectory.toString());
+            return new AttachmentService(assignments, mapper, uploadDirectory.toString(), manager);
         }
     }
 

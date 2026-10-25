@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { canTeach, courseRoles } from "../../utils/course-access";
+import { canTeach } from "../../utils/course-access";
 import { reactive, ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { api, ApiError } from "../../api/client";

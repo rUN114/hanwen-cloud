@@ -74,6 +74,13 @@ public class QuizService {
     }
 
     Map<String, Object> view(Quiz q) {
+        return view(
+                q,
+                questions.selectCount(new QueryWrapper<QuizQuestion>().eq("quiz_id", q.id)),
+                items(q.id).stream().mapToInt(x -> x.points).sum());
+    }
+
+    private Map<String, Object> view(Quiz q, long count, int points) {
         var v =
                 Views.map(
                         "id",
@@ -92,9 +99,7 @@ public class QuizService {
                         q.version,
                         "createdAt",
                         q.createdAt);
-        v.put(
-                "questionCount",
-                questions.selectCount(new QueryWrapper<QuizQuestion>().eq("quiz_id", q.id)));
+        v.put("questionCount", count);
         v.putAll(
                 Views.map(
                         "opensAt",
@@ -105,7 +110,7 @@ public class QuizService {
                         q.timeLimitMinutes,
                         "maxAttempts",
                         q.maxAttempts));
-        v.put("totalPoints", items(q.id).stream().mapToInt(x -> x.points).sum());
+        v.put("totalPoints", points);
         return v;
     }
 
@@ -150,11 +155,31 @@ public class QuizService {
         if (chapterId != null) w.eq("chapter_id", chapterId);
         if (Actor.current().role().equals("STUDENT")) w.ne("status", "DRAFT");
         long total = quizzes.selectCount(w);
+        var rows =
+                quizzes.selectList(w.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset));
+        var counts = new HashMap<Long, Long>();
+        var points = new HashMap<Long, Integer>();
+        if (!rows.isEmpty())
+            questions
+                    .selectMaps(
+                            new QueryWrapper<QuizQuestion>()
+                                    .select("quiz_id", "COUNT(*) AS n", "SUM(points) AS points")
+                                    .in("quiz_id", rows.stream().map(q -> q.id).toList())
+                                    .groupBy("quiz_id"))
+                    .forEach(
+                            row -> {
+                                long quiz = ((Number) row.get("quiz_id")).longValue();
+                                counts.put(quiz, ((Number) row.get("n")).longValue());
+                                points.put(quiz, ((Number) row.get("points")).intValue());
+                            });
         return Views.page(
-                quizzes
-                        .selectList(w.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset))
-                        .stream()
-                        .map(this::view)
+                rows.stream()
+                        .map(
+                                q ->
+                                        view(
+                                                q,
+                                                counts.getOrDefault(q.id, 0L),
+                                                points.getOrDefault(q.id, 0)))
                         .toList(),
                 page,
                 size,
@@ -314,6 +339,33 @@ public class QuizService {
         q.updatedAt = Views.now();
         quizzes.updateById(q);
         return detail(id);
+    }
+
+    public List<Contracts.QuizRelease> releases(List<Long> ids) {
+        Views.role("STUDENT");
+        if (ids.isEmpty() || ids.size() > 100 || ids.stream().anyMatch(id -> id == null || id < 1))
+            throw ApiException.bad("每次查询1至100个有效练习编号");
+        var rows = quizzes.selectByIds(ids);
+        if (rows.size() != new HashSet<>(ids).size()) throw ApiException.missing();
+        var courseById = new HashMap<Long, Course>();
+        for (var q : rows) {
+            if (q.status.equals("DRAFT")) throw ApiException.forbidden();
+            if (!courseById.containsKey(q.courseId)) {
+                var c = course.required(q.courseId);
+                course.readable(c, true);
+                courseById.put(c.id, c);
+            }
+        }
+        return rows.stream()
+                .map(
+                        q ->
+                                new Contracts.QuizRelease(
+                                        q.id,
+                                        q.status,
+                                        courseById.get(q.courseId).status,
+                                        q.closesAt,
+                                        q.maxAttempts))
+                .toList();
     }
 
     public Contracts.QuizSnapshot snapshot(long id) {

@@ -8,7 +8,9 @@ import org.hanwen.assignment.mapper.*;
 import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,6 +27,7 @@ public class AssignmentService {
     final DraftMapper drafts;
     final GradeHistoryMapper history;
     final DirectoryClient directory;
+    final TransactionTemplate transaction;
 
     public record Create(
             Long courseId,
@@ -86,7 +89,8 @@ public class AssignmentService {
             Remote r,
             DraftMapper d,
             GradeHistoryMapper h,
-            DirectoryClient directory) {
+            DirectoryClient directory,
+            PlatformTransactionManager manager) {
         tasks = t;
         submissions = s;
         grades = g;
@@ -96,6 +100,7 @@ public class AssignmentService {
         drafts = d;
         history = h;
         this.directory = directory;
+        transaction = new TransactionTemplate(manager);
     }
 
     public Task task(long id) {
@@ -279,26 +284,43 @@ public class AssignmentService {
         return taskView(t);
     }
 
-    @Transactional
     public Object update(long id, Write in) {
-        Task t = lockedTask(id);
-        editor(t);
-        if (!t.status.equals("DRAFT")) throw ApiException.conflict("已发布作业的题目、满分和截止已冻结");
-        if (!course(t.courseId).status().equals("PUBLISHED"))
-            throw ApiException.conflict("归档课程不能修改作业");
-        fields(t, in);
-        tasks.updateById(t);
-        return taskView(t);
+        Task initial = task(id);
+        var c = course(initial.courseId);
+        Views.role("TEACHER");
+        if (!c.canTeach()) throw ApiException.forbidden();
+        if (!c.status().equals("PUBLISHED")) throw ApiException.conflict("归档课程不能修改作业");
+        return transaction.execute(
+                _ -> {
+                    Task t = lockedTask(id);
+                    if (!t.courseId.equals(initial.courseId))
+                        throw ApiException.conflict("所属课程已改变，请刷新");
+                    if (!t.status.equals("DRAFT")) throw ApiException.conflict("已发布作业的题目、满分和截止已冻结");
+                    fields(t, in);
+                    tasks.updateById(t);
+                    return taskView(t);
+                });
     }
 
-    @Transactional
     public Object transition(long id, boolean publish) {
-        Task t = lockedTask(id);
-        editor(t);
+        Task initial = task(id);
+        var c = course(initial.courseId);
+        Views.role("TEACHER");
+        if (!c.canTeach()) throw ApiException.forbidden();
+        if (!c.status().equals("PUBLISHED")) throw ApiException.conflict("归档课程不能修改作业状态");
+        return transaction.execute(
+                _ -> {
+                    Task t = lockedTask(id);
+                    if (!t.courseId.equals(initial.courseId))
+                        throw ApiException.conflict("所属课程已改变，请刷新");
+                    return transitionLocked(t, publish);
+                });
+    }
+
+    // 调用方已核对课程权限，并持有该作业行锁；批量操作复用同一课程快照。
+    Object transitionLocked(Task t, boolean publish) {
         if (!t.status.equals(publish ? "DRAFT" : "PUBLISHED"))
             throw ApiException.conflict("作业状态已改变，请刷新");
-        if (!course(t.courseId).status().equals("PUBLISHED"))
-            throw ApiException.conflict("归档课程不能修改作业状态");
         if (publish && t.deadlineAt != null && !t.deadlineAt.isAfter(Views.now()))
             throw ApiException.bad("发布时截止时间须在未来");
         t.status = publish ? "PUBLISHED" : "CLOSED";
@@ -418,12 +440,19 @@ public class AssignmentService {
         return v;
     }
 
-    @Transactional
     public Object mark(long id, Mark in) {
         Submission initial = submission(id);
-        Task t = lockedTask(initial.assignmentId);
-        owner(t);
+        Task snapshot = task(initial.assignmentId);
+        owner(snapshot);
+        return transaction.execute(_ -> markLocal(id, in, snapshot));
+    }
+
+    private Object markLocal(long id, Mark in, Task snapshot) {
+        Task t = lockedTask(snapshot.id);
+        if (!t.courseId.equals(snapshot.courseId)) throw ApiException.conflict("所属课程已改变，请刷新");
         Submission s = submissions.lock(id);
+        if (s == null) throw ApiException.missing();
+        if (!s.assignmentId.equals(t.id)) throw ApiException.conflict("所属作业已改变，请刷新");
         version(s, in.expectedVersion());
         var criteria = Rubrics.read(t.rubricJson);
         BigDecimal score =

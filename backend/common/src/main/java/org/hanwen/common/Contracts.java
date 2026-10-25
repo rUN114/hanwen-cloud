@@ -59,6 +59,13 @@ public final class Contracts {
         }
     }
 
+    public record QuizRelease(
+            long quizId,
+            String status,
+            String courseStatus,
+            java.time.LocalDateTime closesAt,
+            int maxAttempts) {}
+
     public record QuizSnapshot(
             long quizId,
             long courseId,

@@ -8,7 +8,8 @@ import org.hanwen.common.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -23,23 +24,30 @@ public class AttachmentService {
     final AssignmentService assignments;
     final AttachmentMapper files;
     final Path storage;
+    final TransactionTemplate transaction;
 
     public AttachmentService(
             AssignmentService a,
             AttachmentMapper f,
-            @Value("${HW_STORAGE_DIR:${user.dir}/.local/uploads}") String dir)
+            @Value("${HW_STORAGE_DIR:${user.dir}/.local/uploads}") String dir,
+            PlatformTransactionManager manager)
             throws IOException {
         assignments = a;
         files = f;
         storage = Path.of(dir).toAbsolutePath().normalize();
         Files.createDirectories(storage);
+        transaction = new TransactionTemplate(manager);
+    }
+
+    private void validateWrite(long id) {
+        var initial = assignments.task(id);
+        assignments.student(initial, true);
     }
 
     void writable(long id) {
         Views.role("STUDENT");
         var t = assignments.tasks().lock(id);
         if (t == null) throw ApiException.missing();
-        assignments.student(t, true);
         assignments.writable(t);
         var s =
                 assignments
@@ -95,8 +103,23 @@ public class AttachmentService {
                 .toList();
     }
 
-    @Transactional
     public Object upload(long id, MultipartFile file) throws IOException {
+        validateWrite(id);
+        try {
+            return transaction.execute(
+                    _ -> {
+                        try {
+                            return uploadLocal(id, file);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
+    }
+
+    private Object uploadLocal(long id, MultipartFile file) throws IOException {
         writable(id);
         if (file == null || file.isEmpty() || file.getSize() > 20971520)
             throw ApiException.bad("附件须为1字节至20MB");
@@ -164,14 +187,23 @@ public class AttachmentService {
         return p;
     }
 
-    @Transactional
     public void remove(long id) {
         var f = readable(id);
         if (f.studentId != Actor.current().id()) throw ApiException.forbidden();
-        writable(f.assignmentId);
-        f.status = "REMOVED";
-        f.removedAt = Views.now();
-        files.updateById(f);
+        validateWrite(f.assignmentId);
+        transaction.executeWithoutResult(
+                _ -> {
+                    writable(f.assignmentId);
+                    var current = files.selectById(id);
+                    if (current == null || !current.status.equals("ACTIVE"))
+                        throw ApiException.missing();
+                    if (!current.assignmentId.equals(f.assignmentId)
+                            || current.studentId != Actor.current().id())
+                        throw ApiException.forbidden();
+                    current.status = "REMOVED";
+                    current.removedAt = Views.now();
+                    files.updateById(current);
+                });
     }
 
     @Scheduled(fixedDelay = 21_600_000, initialDelay = 60_000)

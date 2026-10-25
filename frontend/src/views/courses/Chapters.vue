@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { canTeach, courseRoles } from "../../utils/course-access";
+import { canTeach } from "../../utils/course-access";
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessageBox } from "element-plus";

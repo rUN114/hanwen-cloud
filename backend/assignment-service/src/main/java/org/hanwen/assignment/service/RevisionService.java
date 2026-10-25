@@ -6,7 +6,8 @@ import org.hanwen.assignment.mapper.*;
 import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
@@ -14,10 +15,28 @@ import java.util.*;
 public class RevisionService {
     final AssignmentService assignment;
     final SubmissionRevisionMapper revisions;
+    final TransactionTemplate transaction;
 
-    public RevisionService(AssignmentService a, SubmissionRevisionMapper r) {
+    public RevisionService(
+            AssignmentService a, SubmissionRevisionMapper r, PlatformTransactionManager manager) {
         assignment = a;
         revisions = r;
+        transaction = new TransactionTemplate(manager);
+    }
+
+    private Submission writableSubmission(long id, String role) {
+        Views.role(role);
+        var initial = sub(id, false);
+        writable(access(initial));
+        return initial;
+    }
+
+    private Submission lockedSubmission(Submission initial) {
+        var current = sub(initial.id, true);
+        if (!current.assignmentId.equals(initial.assignmentId)
+                || !current.studentId.equals(initial.studentId))
+            throw ApiException.conflict("所属答卷已改变，请刷新");
+        return current;
     }
 
     public record Invite(String requestText, Integer expectedSubmissionVersion) {}
@@ -115,15 +134,16 @@ public class RevisionService {
                 rows(id).stream().map(this::view).toList());
     }
 
-    @Transactional
     public Object invite(long id, Invite in) {
-        Views.role("TEACHER");
-        var s = sub(id, true);
-        var t = access(s);
-        writable(t);
+        var initial = writableSubmission(id, "TEACHER");
+        return transaction.execute(_ -> inviteLocal(initial, in));
+    }
+
+    private Object inviteLocal(Submission initial, Invite in) {
+        var s = lockedSubmission(initial);
         Names.version(s.version, in.expectedSubmissionVersion());
         if (!s.status.equals("GRADED")) throw ApiException.conflict("请先批阅正式答卷，再发起修订");
-        var rows = rows(id);
+        var rows = rows(s.id);
         room(rows);
         if (rows.stream().anyMatch(this::active)) throw ApiException.conflict("当前已有未完成修订");
         return view(open(s, in.requestText()));
@@ -135,12 +155,13 @@ public class RevisionService {
         return r;
     }
 
-    @Transactional
     public Object submit(long submission, long id, Submit in) {
-        Views.role("STUDENT");
-        var s = sub(submission, true);
-        var t = access(s);
-        writable(t);
+        var initial = writableSubmission(submission, "STUDENT");
+        return transaction.execute(_ -> submitLocal(initial, id, in));
+    }
+
+    private Object submitLocal(Submission initial, long id, Submit in) {
+        var s = lockedSubmission(initial);
         var r = required(id, s);
         Names.version(r.version, in.expectedVersion());
         if (!r.status.equals("OPEN")) throw ApiException.conflict("修订状态已改变，请刷新");
@@ -157,12 +178,13 @@ public class RevisionService {
         return view(r);
     }
 
-    @Transactional
     public Object review(long submission, long id, Review in) {
-        Views.role("TEACHER");
-        var s = sub(submission, true);
-        var t = access(s);
-        writable(t);
+        var initial = writableSubmission(submission, "TEACHER");
+        return transaction.execute(_ -> reviewLocal(initial, id, in));
+    }
+
+    private Object reviewLocal(Submission initial, long id, Review in) {
+        var s = lockedSubmission(initial);
         var r = required(id, s);
         Names.version(r.version, in.expectedVersion());
         if (!r.status.equals("SUBMITTED")) throw ApiException.conflict("学生尚未提交或此修订已评阅");
@@ -179,12 +201,13 @@ public class RevisionService {
         return view(r);
     }
 
-    @Transactional
     public Object cancel(long submission, long id, Integer version) {
-        Views.role("TEACHER");
-        var s = sub(submission, true);
-        var t = access(s);
-        writable(t);
+        var initial = writableSubmission(submission, "TEACHER");
+        return transaction.execute(_ -> cancelLocal(initial, id, version));
+    }
+
+    private Object cancelLocal(Submission initial, long id, Integer version) {
+        var s = lockedSubmission(initial);
         var r = required(id, s);
         Names.version(r.version, version);
         if (!r.status.equals("OPEN")) throw ApiException.conflict("只可取消尚未提交的修订邀请");

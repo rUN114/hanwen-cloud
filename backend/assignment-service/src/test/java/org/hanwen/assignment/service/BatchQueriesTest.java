@@ -80,7 +80,15 @@ class BatchQueriesTest {
         var submitted = new Submission();
         submitted.assignmentId = 1L;
         when(submissions.selectList(any())).thenReturn(List.of(submitted));
-        var result = (Map<?, ?>) new ReminderService(assignment, reminders).feed();
+        var result =
+                (Map<?, ?>)
+                        new ReminderService(
+                                        assignment,
+                                        reminders,
+                                        mock(
+                                                org.springframework.transaction
+                                                        .PlatformTransactionManager.class))
+                                .feed();
         var items = (List<?>) result.get("items");
         assertEquals(1, items.size());
         assertEquals("习作2：48小时内截止", ((Map<?, ?>) items.getFirst()).get("title"));
@@ -98,7 +106,15 @@ class BatchQueriesTest {
         when(assignment.remote()).thenReturn(new Remote());
         when(assignment.learning()).thenReturn(learning);
         when(learning.activeCourses()).thenReturn(List.of());
-        var result = (Map<?, ?>) new ReminderService(assignment, reminders).feed();
+        var result =
+                (Map<?, ?>)
+                        new ReminderService(
+                                        assignment,
+                                        reminders,
+                                        mock(
+                                                org.springframework.transaction
+                                                        .PlatformTransactionManager.class))
+                                .feed();
         assertEquals(List.of(), result.get("items"));
         verify(assignment, never()).tasks();
         verify(assignment, never()).submissions();

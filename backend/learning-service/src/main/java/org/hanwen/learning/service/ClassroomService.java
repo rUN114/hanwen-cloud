@@ -8,7 +8,9 @@ import org.hanwen.learning.mapper.*;
 import org.hanwen.learning.model.*;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.*;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.security.SecureRandom;
 import java.util.*;
@@ -21,6 +23,8 @@ public class ClassroomService {
     final CourseClient courses;
     final DirectoryClient directory;
     final Remote remote;
+    final TransactionTemplate transaction;
+    final TransactionTemplate membershipTransaction;
 
     public ClassroomService(
             ClassroomMapper r,
@@ -28,13 +32,17 @@ public class ClassroomService {
             EnrollmentMapper e,
             CourseClient c,
             DirectoryClient d,
-            Remote rm) {
+            Remote rm,
+            PlatformTransactionManager manager) {
         rooms = r;
         members = m;
         enrollments = e;
         courses = c;
         directory = d;
         remote = rm;
+        transaction = new TransactionTemplate(manager);
+        membershipTransaction = new TransactionTemplate(manager);
+        membershipTransaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
 
     public record Create(Long courseId, String name, String semester, String description) {}
@@ -65,14 +73,22 @@ public class ClassroomService {
         if (!course(r).canGrade()) throw ApiException.forbidden();
     }
 
-    void editor(Classroom r) {
-        owner(r);
-        if (!course(r).canTeach()) throw ApiException.forbidden();
+    Contracts.CourseValidation editor(Classroom r) {
+        Views.role("TEACHER");
+        var c = course(r);
+        if (!c.canTeach()) throw ApiException.forbidden();
+        return c;
     }
 
-    void active(Classroom r) {
-        if (!r.status.equals("ACTIVE") || !course(r).status().equals("PUBLISHED"))
+    void active(Classroom r, Contracts.CourseValidation c) {
+        if (!r.status.equals("ACTIVE") || !c.status().equals("PUBLISHED"))
             throw ApiException.conflict("班级已结课或课程已归档，不能加入学生");
+    }
+
+    private Classroom locked(Classroom initial) {
+        var current = required(initial.id, true);
+        if (!current.courseId.equals(initial.courseId)) throw ApiException.conflict("所属课程已改变，请刷新");
+        return current;
     }
 
     ClassMember member(long id, long student) {
@@ -82,6 +98,24 @@ public class ClassroomService {
 
     Map<String, Object> view(Classroom r) {
         var c = course(r);
+        return view(r, c);
+    }
+
+    Map<String, Object> view(Classroom r, Contracts.CourseValidation c) {
+        long count =
+                members.selectCount(
+                        new QueryWrapper<ClassMember>()
+                                .eq("class_id", r.id)
+                                .eq("status", "ACTIVE"));
+        var membership =
+                Actor.current().role().equals("TEACHER")
+                        ? null
+                        : member(r.id, Actor.current().id());
+        return view(r, c, count, membership);
+    }
+
+    private Map<String, Object> view(
+            Classroom r, Contracts.CourseValidation c, long memberCount, ClassMember membership) {
         var v =
                 Views.map(
                         "id",
@@ -108,16 +142,10 @@ public class ClassroomService {
                         r.version,
                         "createdAt",
                         r.createdAt);
-        v.put(
-                "memberCount",
-                members.selectCount(
-                        new QueryWrapper<ClassMember>()
-                                .eq("class_id", r.id)
-                                .eq("status", "ACTIVE")));
+        v.put("memberCount", memberCount);
         if (Actor.current().role().equals("TEACHER")) v.put("joinCode", r.joinCode);
         else {
-            var m = member(r.id, Actor.current().id());
-            v.put("enrollmentId", m == null ? null : m.enrollmentId.toString());
+            v.put("enrollmentId", membership == null ? null : membership.enrollmentId.toString());
         }
         return v;
     }
@@ -151,11 +179,51 @@ public class ClassroomService {
             q.eq("status", status);
         }
         long total = rooms.selectCount(q);
+        var rows =
+                rooms.selectList(q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset));
+        var courseById = new HashMap<Long, Contracts.CourseValidation>();
+        var counts = new HashMap<Long, Long>();
+        var memberships = new HashMap<Long, ClassMember>();
+        if (!rows.isEmpty()) {
+            String ids =
+                    rows.stream()
+                            .map(r -> r.courseId)
+                            .distinct()
+                            .map(Object::toString)
+                            .collect(java.util.stream.Collectors.joining(","));
+            for (var c : remote.call("class-courses", () -> courses.courses(ids)))
+                courseById.put(c.id(), c);
+            var classes = rows.stream().map(r -> r.id).toList();
+            members.selectMaps(
+                            new QueryWrapper<ClassMember>()
+                                    .select("class_id", "COUNT(*) AS n")
+                                    .in("class_id", classes)
+                                    .eq("status", "ACTIVE")
+                                    .groupBy("class_id"))
+                    .forEach(
+                            row ->
+                                    counts.put(
+                                            ((Number) row.get("class_id")).longValue(),
+                                            ((Number) row.get("n")).longValue()));
+            if (!teacher)
+                members.selectList(
+                                new QueryWrapper<ClassMember>()
+                                        .in("class_id", classes)
+                                        .eq("student_id", Actor.current().id()))
+                        .forEach(m -> memberships.put(m.classId, m));
+        }
         return Views.page(
-                rooms
-                        .selectList(q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset))
-                        .stream()
-                        .map(this::view)
+                rows.stream()
+                        .map(
+                                r -> {
+                                    var c = courseById.get(r.courseId);
+                                    if (c == null) throw ApiException.missing();
+                                    return view(
+                                            r,
+                                            c,
+                                            counts.getOrDefault(r.id, 0L),
+                                            memberships.get(r.id));
+                                })
                         .toList(),
                 page,
                 size,
@@ -187,7 +255,6 @@ public class ClassroomService {
         return HexFormat.of().formatHex(b).toUpperCase(Locale.ROOT);
     }
 
-    @Transactional
     public Object create(Create in) {
         Views.role("TEACHER");
         if (in.courseId() == null || in.courseId() < 1) throw ApiException.bad("请选择课程");
@@ -202,37 +269,48 @@ public class ClassroomService {
         r.status = "ACTIVE";
         r.version = 0;
         r.createdAt = r.updatedAt;
-        rooms.insert(r);
-        return view(r);
+        return transaction.execute(
+                _ -> {
+                    rooms.insert(r);
+                    return view(r, c);
+                });
     }
 
-    @Transactional
     public Object update(long id, Write in) {
-        var r = required(id, true);
-        editor(r);
+        var initial = required(id, false);
+        var c = editor(initial);
+        return transaction.execute(_ -> updateLocal(initial, in, c));
+    }
+
+    private Object updateLocal(Classroom initial, Write in, Contracts.CourseValidation c) {
+        var r = locked(initial);
         Names.version(r.version, in.expectedVersion());
         if (!Set.of("ACTIVE", "CLOSED").contains(String.valueOf(in.status())))
             throw ApiException.bad("班级状态不合法");
-        if (in.status().equals("ACTIVE") && !course(r).status().equals("PUBLISHED"))
+        if (in.status().equals("ACTIVE") && !c.status().equals("PUBLISHED"))
             throw ApiException.conflict("归档课程不能开放班级");
         fields(r, in.name(), in.semester(), in.description());
         r.status = in.status();
         r.version++;
         rooms.updateById(r);
-        return view(r);
+        return view(r, c);
     }
 
-    @Transactional
     public Object rotate(long id, int version) {
-        var r = required(id, true);
-        editor(r);
-        active(r);
+        var initial = required(id, false);
+        var c = editor(initial);
+        return transaction.execute(_ -> rotateLocal(initial, version, c));
+    }
+
+    private Object rotateLocal(Classroom initial, int version, Contracts.CourseValidation c) {
+        var r = locked(initial);
+        active(r, c);
         Names.version(r.version, version);
         r.joinCode = code();
         r.version++;
         r.updatedAt = Views.now();
         rooms.updateById(r);
-        return view(r);
+        return view(r, c);
     }
 
     ClassMember add(Classroom r, long student) {
@@ -270,32 +348,45 @@ public class ClassroomService {
         return m;
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Object importMembers(long id, Import in) {
-        var r = required(id, true);
-        editor(r);
-        active(r);
+        var initial = required(id, false);
+        var c = editor(initial);
+        active(initial, c);
         var accounts = remote.call("class-students", () -> directory.students(in.usernames()));
+        return membershipTransaction.execute(_ -> importLocal(initial, c, accounts));
+    }
+
+    private Object importLocal(
+            Classroom initial,
+            Contracts.CourseValidation c,
+            List<Contracts.StudentAccount> accounts) {
+        var r = locked(initial);
+        active(r, c);
         int added = 0;
         for (var a : accounts) {
-            var previous = member(id, a.id());
+            var previous = member(r.id, a.id());
             if (previous == null || previous.status.equals("LEFT")) added++;
             add(r, a.id());
         }
         return Views.map("processed", accounts.size(), "added", added);
     }
 
-    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Object join(Join in) {
         Views.role("STUDENT");
         String code = Views.text(in.code(), 24, "邀请码").toUpperCase(Locale.ROOT);
         var found = rooms.selectOne(new QueryWrapper<Classroom>().eq("join_code", code));
         if (found == null) throw ApiException.bad("邀请码无效");
-        var r = required(found.id, true);
+        var c = course(found);
+        active(found, c);
+        return membershipTransaction.execute(_ -> joinLocal(found, code, c));
+    }
+
+    private Object joinLocal(Classroom initial, String code, Contracts.CourseValidation c) {
+        var r = locked(initial);
         if (!r.joinCode.equals(code)) throw ApiException.conflict("邀请码已更新");
-        active(r);
+        active(r, c);
         add(r, Actor.current().id());
-        return view(r);
+        return view(r, c);
     }
 
     public Object roster(long id, int page, int size) {
@@ -330,13 +421,16 @@ public class ClassroomService {
                 total);
     }
 
-    @Transactional
     public void remove(long id, long memberId) {
-        var r = required(id, true);
-        editor(r);
-        var m = members.lock(memberId);
-        if (m == null || m.classId != id) throw ApiException.missing();
-        m.status = "LEFT";
-        members.updateById(m);
+        var initial = required(id, false);
+        editor(initial);
+        transaction.executeWithoutResult(
+                _ -> {
+                    locked(initial);
+                    var m = members.lock(memberId);
+                    if (m == null || m.classId != id) throw ApiException.missing();
+                    m.status = "LEFT";
+                    members.updateById(m);
+                });
     }
 }

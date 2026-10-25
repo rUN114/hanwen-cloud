@@ -28,6 +28,7 @@ const chapterId = ref(props.chapterId || "");
 const file = ref<File | null>(null);
 const preview = ref<ResourceFile | null>(null);
 const url = ref("");
+let disposed = false;
 const dialog = ref(false);
 const { busy, error, run } = useTask();
 async function fetchRows() {
@@ -56,6 +57,7 @@ onMounted(async () => {
   load();
 });
 onUnmounted(() => {
+  disposed = true;
   if (url.value) URL.revokeObjectURL(url.value);
 });
 function selectFile(event: Event) {
@@ -96,7 +98,10 @@ function show(f: ResourceFile) {
   run(async () => {
     if (url.value) URL.revokeObjectURL(url.value);
     preview.value = null;
-    url.value = URL.createObjectURL(await apiFile("/api/resources/" + f.id + "/file"));
+    url.value = "";
+    const blob = await apiFile("/api/resources/" + f.id + "/file");
+    if (disposed) return;
+    url.value = URL.createObjectURL(blob);
     preview.value = f;
   });
 }

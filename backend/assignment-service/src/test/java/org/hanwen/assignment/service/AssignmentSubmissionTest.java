@@ -46,7 +46,8 @@ class AssignmentSubmissionTest {
                         new Remote(),
                         drafts,
                         mock(GradeHistoryMapper.class),
-                        mock(DirectoryClient.class));
+                        mock(DirectoryClient.class),
+                        mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     @AfterEach

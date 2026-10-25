@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ListPager from "../../components/common/ListPager.vue";
-import { canTeach, courseRoles } from "../../utils/course-access";
+import { canTeach } from "../../utils/course-access";
 import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessageBox, ElMessage } from "element-plus";

@@ -130,6 +130,11 @@ public class CommunityService {
     }
 
     Map<String, Object> questionView(Question q, String name) {
+        return questionView(
+                q, name, replies.selectCount(new QueryWrapper<Reply>().eq("question_id", q.id)));
+    }
+
+    private Map<String, Object> questionView(Question q, String name, long count) {
         return Views.map(
                 "id",
                 q.id,
@@ -154,7 +159,7 @@ public class CommunityService {
                 "updatedAt",
                 q.updatedAt,
                 "replyCount",
-                replies.selectCount(new QueryWrapper<Reply>().eq("question_id", q.id)).intValue());
+                (int) count);
     }
 
     public Object questions(long id, int page, int size, String keyword, Boolean resolved) {
@@ -168,8 +173,27 @@ public class CommunityService {
                 questions.selectList(
                         q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset));
         var names = Names.read(rows.stream().map(x -> x.studentId).toList(), directory, remote);
+        var counts = new HashMap<Long, Long>();
+        if (!rows.isEmpty())
+            replies.selectMaps(
+                            new QueryWrapper<Reply>()
+                                    .select("question_id", "COUNT(*) AS n")
+                                    .in("question_id", rows.stream().map(x -> x.id).toList())
+                                    .groupBy("question_id"))
+                    .forEach(
+                            row ->
+                                    counts.put(
+                                            ((Number) row.get("question_id")).longValue(),
+                                            ((Number) row.get("n")).longValue()));
         return Views.page(
-                rows.stream().map(x -> questionView(x, names.get(x.studentId))).toList(),
+                rows.stream()
+                        .map(
+                                x ->
+                                        questionView(
+                                                x,
+                                                names.get(x.studentId),
+                                                counts.getOrDefault(x.id, 0L)))
+                        .toList(),
                 page,
                 size,
                 total);

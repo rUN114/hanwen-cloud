@@ -8,6 +8,9 @@ import java.util.Map;
 
 @FeignClient(name = "hw-course-service", contextId = "learning-course")
 public interface CourseClient {
+    @GetMapping("/internal/quizzes/releases")
+    java.util.List<Contracts.QuizRelease> releases(@RequestParam String ids);
+
     @GetMapping("/internal/quizzes/{id}/snapshot")
     Contracts.QuizSnapshot snapshot(@PathVariable long id);
 

@@ -33,7 +33,12 @@ class AttachmentServiceTest {
     @Test
     void purgeRequiresExpiredRemovalAndCanRepeatAfterTheFileDisappears() throws Exception {
         var mapper = mock(AttachmentMapper.class);
-        var service = new AttachmentService(mock(AssignmentService.class), mapper, dir.toString());
+        var service =
+                new AttachmentService(
+                        mock(AssignmentService.class),
+                        mapper,
+                        dir.toString(),
+                        mock(org.springframework.transaction.PlatformTransactionManager.class));
         var f = item(1, "old.bin");
         Files.writeString(dir.resolve(f.storageName), "附件");
         when(mapper.selectList(any())).thenReturn(List.of(f));
@@ -65,7 +70,11 @@ class AttachmentServiceTest {
         var mapper = mock(AttachmentMapper.class);
         var storage = dir.resolve("uploads");
         var service =
-                new AttachmentService(mock(AssignmentService.class), mapper, storage.toString());
+                new AttachmentService(
+                        mock(AssignmentService.class),
+                        mapper,
+                        storage.toString(),
+                        mock(org.springframework.transaction.PlatformTransactionManager.class));
         Files.writeString(dir.resolve("outside.bin"), "保留");
         Files.createDirectory(storage.resolve("blocked.bin"));
         Files.writeString(storage.resolve("blocked.bin/child"), "保留");
@@ -80,7 +89,12 @@ class AttachmentServiceTest {
     @Test
     void purgeProcessesMoreThanOnePageWithoutRequeryingFailedRows() throws Exception {
         var mapper = mock(AttachmentMapper.class);
-        var service = new AttachmentService(mock(AssignmentService.class), mapper, dir.toString());
+        var service =
+                new AttachmentService(
+                        mock(AssignmentService.class),
+                        mapper,
+                        dir.toString(),
+                        mock(org.springframework.transaction.PlatformTransactionManager.class));
         var first = LongStream.rangeClosed(1, 200).mapToObj(id -> item(id, id + ".bin")).toList();
         when(mapper.selectList(any())).thenReturn(first, List.of(item(201, "201.bin")));
         service.purgeRemovedAttachments();
@@ -93,10 +107,19 @@ class AttachmentServiceTest {
         Actor.set(new Actor(3, "STUDENT", 0));
         var mapper = mock(AttachmentMapper.class);
         var service =
-                spy(new AttachmentService(mock(AssignmentService.class), mapper, dir.toString()));
+                spy(
+                        new AttachmentService(
+                                mock(AssignmentService.class),
+                                mapper,
+                                dir.toString(),
+                                mock(
+                                        org.springframework.transaction.PlatformTransactionManager
+                                                .class)));
         var f = item(1, "file.bin");
         f.assignmentId = 7L;
         f.studentId = 3L;
+        f.status = "ACTIVE";
+        when(mapper.selectById(1L)).thenReturn(f);
         doReturn(f).when(service).readable(1);
         doNothing().when(service).writable(7);
         var before = Views.now();

@@ -6,7 +6,8 @@ import org.hanwen.assignment.mapper.*;
 import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
@@ -19,6 +20,7 @@ public class AssignmentExtrasService {
     final GradeHistoryMapper history;
     final DirectoryClient directory;
     final Remote remote;
+    final TransactionTemplate transaction;
 
     public AssignmentExtrasService(
             AssignmentService a,
@@ -27,7 +29,8 @@ public class AssignmentExtrasService {
             SubmissionMapper s,
             GradeHistoryMapper h,
             DirectoryClient n,
-            Remote r) {
+            Remote r,
+            PlatformTransactionManager manager) {
         assignment = a;
         drafts = d;
         tasks = t;
@@ -35,6 +38,7 @@ public class AssignmentExtrasService {
         history = h;
         directory = n;
         remote = r;
+        transaction = new TransactionTemplate(manager);
     }
 
     public record Write(String answerText, Integer expectedVersion) {}
@@ -59,12 +63,18 @@ public class AssignmentExtrasService {
         return view(mine(id));
     }
 
-    @Transactional
     public Object save(long id, Write in) {
         Views.role("STUDENT");
+        var initial = tasks.selectById(id);
+        if (initial == null) throw ApiException.missing();
+        assignment.student(initial, true);
+        return transaction.execute(_ -> saveLocal(id, in, initial));
+    }
+
+    private Object saveLocal(long id, Write in, Task initial) {
         var t = tasks.lock(id);
         if (t == null) throw ApiException.missing();
-        assignment.student(t, true);
+        if (!t.courseId.equals(initial.courseId)) throw ApiException.conflict("所属课程已改变，请刷新");
         assignment.writable(t);
         var sub =
                 submissions.selectOne(

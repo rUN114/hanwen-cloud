@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ListPager from "../../components/common/ListPager.vue";
-import { canTeach, courseRoles } from "../../utils/course-access";
+import { canTeach } from "../../utils/course-access";
 import { ref, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { api } from "../../api/client";

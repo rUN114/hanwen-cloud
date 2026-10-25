@@ -1,24 +1,27 @@
 package org.hanwen.assignment.service;
 
+import org.hanwen.assignment.model.Task;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
 @Service
 public class BatchTaskService {
     final AssignmentService assignment;
+    final TransactionTemplate transaction;
 
-    public BatchTaskService(AssignmentService a) {
+    public BatchTaskService(AssignmentService a, PlatformTransactionManager manager) {
         assignment = a;
+        transaction = new TransactionTemplate(manager);
     }
 
     public record Item(Long id, String status, String updatedAt) {}
 
     public record Write(Long courseId, String action, List<Item> items) {}
 
-    @Transactional
     public Object apply(Write in) {
         Views.role("TEACHER");
         if (in.courseId() == null
@@ -37,7 +40,12 @@ public class BatchTaskService {
         if (!c.status().equals("PUBLISHED")) throw ApiException.conflict("归档课程不能批量改变作业");
         var ordered = in.items().stream().sorted(Comparator.comparing(Item::id)).toList();
         boolean publish = in.action().equals("PUBLISH");
+        return transaction.execute(_ -> applyLocal(in, ordered, publish));
+    }
+
+    private Object applyLocal(Write in, List<Item> ordered, boolean publish) {
         String required = publish ? "DRAFT" : "PUBLISHED";
+        var locked = new ArrayList<Task>();
         for (var x : ordered) {
             var t = assignment.tasks().lock(x.id());
             if (t == null) throw ApiException.missing();
@@ -55,10 +63,11 @@ public class BatchTaskService {
                 throw ApiException.conflict("所选作业已更新，请刷新后重新核对");
             if (publish && t.deadlineAt != null && !t.deadlineAt.isAfter(Views.now()))
                 throw ApiException.bad("所选作业已截止，不能发布");
+            locked.add(t);
         }
         // All rows are locked and checked before any state change; a failed batch is rolled back in
         // full.
-        var result = ordered.stream().map(x -> assignment.transition(x.id(), publish)).toList();
+        var result = locked.stream().map(t -> assignment.transitionLocked(t, publish)).toList();
         return Views.map("changed", result.size(), "items", result);
     }
 }

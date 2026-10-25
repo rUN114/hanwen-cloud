@@ -258,48 +258,6 @@ function join() {
           maxlength="1000"
         />
       </div>
-      <div class="toolbar">
-        <el-input
-          v-model="semester"
-          aria-label="学期筛选"
-          placeholder="完整学期，如2026秋"
-          clearable
-          @keyup.enter="
-            page = 1;
-            load();
-          "
-        />
-        <el-select
-          v-model="status"
-          aria-label="班级状态"
-          clearable
-          placeholder="全部学舍"
-          @change="
-            page = 1;
-            load();
-          "
-        >
-          <el-option
-            label="在读班级"
-            value="ACTIVE"
-          />
-          <el-option
-            label="已结课"
-            value="CLOSED"
-          />
-        </el-select>
-        <el-button
-          @click="
-            page = 1;
-            load();
-          "
-        >
-          筛选学期
-        </el-button>
-      </div>
-      <p class="field-hint">
-        学舍组织同窗，选课决定学习资格。移出学舍不会删除选课、答卷或成绩；结课后仍可查阅历史。
-      </p>
       <StatePanel
         :error="error"
         @retry="create"

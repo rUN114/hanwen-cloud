@@ -73,6 +73,24 @@ public class CourseService {
         return m == null ? "NONE" : m.role;
     }
 
+    private java.util.Map<Long, String> accessRoles(List<Course> rows) {
+        var roles = new HashMap<Long, String>();
+        var actor = Actor.current();
+        if (!actor.role().equals("TEACHER") || rows.isEmpty()) return roles;
+        var delegated =
+                rows.stream().filter(c -> c.teacherId != actor.id()).map(c -> c.id).toList();
+        if (!delegated.isEmpty())
+            team.selectList(
+                            new QueryWrapper<CourseTeam>()
+                                    .select("course_id", "role")
+                                    .in("course_id", delegated)
+                                    .eq("user_id", actor.id())
+                                    .eq("status", "ACTIVE"))
+                    .forEach(m -> roles.put(m.courseId, m.role));
+        rows.stream().filter(c -> c.teacherId == actor.id()).forEach(c -> roles.put(c.id, "OWNER"));
+        return roles;
+    }
+
     public void owner(Course c) {
         Views.role("TEACHER");
         if (!java.util.Set.of("OWNER", "CO_TEACHER").contains(accessRole(c)))
@@ -169,12 +187,13 @@ public class CourseService {
         var rows =
                 courses.selectList(q.orderByDesc("id").last("LIMIT " + size + " OFFSET " + offset));
         var names = Names.read(rows.stream().map(c -> c.teacherId).toList(), directory, remote);
+        var roles = accessRoles(rows);
         return Views.page(
                 rows.stream()
                         .map(
                                 c -> {
                                     var v = view(c);
-                                    v.put("accessRole", accessRole(c));
+                                    v.put("accessRole", roles.getOrDefault(c.id, "NONE"));
                                     v.put("teacherName", names.getOrDefault(c.teacherId, "教师"));
                                     return v;
                                 })
@@ -328,6 +347,7 @@ public class CourseService {
                                 counts.put(
                                         ((Number) m.get("course_id")).longValue(),
                                         ((Number) m.get("n")).intValue()));
+        var roles = accessRoles(rows);
         return rows.stream()
                 .map(
                         c ->
@@ -337,7 +357,7 @@ public class CourseService {
                                         c.status,
                                         counts.getOrDefault(c.id, 0),
                                         c.name,
-                                        accessRole(c)))
+                                        roles.getOrDefault(c.id, "NONE")))
                 .toList();
     }
 

@@ -6,7 +6,8 @@ import org.hanwen.assignment.mapper.*;
 import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
@@ -14,10 +15,15 @@ import java.util.*;
 public class ReminderService {
     final AssignmentService assignmentService;
     final ReminderMapper reminders;
+    final TransactionTemplate transaction;
 
-    public ReminderService(AssignmentService assignmentService, ReminderMapper r) {
+    public ReminderService(
+            AssignmentService assignmentService,
+            ReminderMapper r,
+            PlatformTransactionManager manager) {
         this.assignmentService = assignmentService;
         reminders = r;
+        transaction = new TransactionTemplate(manager);
     }
 
     public record Send(List<Long> studentIds, String content) {}
@@ -31,14 +37,17 @@ public class ReminderService {
                         .call(
                                 "reminder-students",
                                 () -> assignmentService.learning().grades(t.courseId));
-        var submitted =
-                assignmentService
-                        .submissions()
-                        .selectList(new QueryWrapper<Submission>().eq("assignment_id", t.id))
-                        .stream()
-                        .map(s -> s.studentId)
-                        .collect(java.util.stream.Collectors.toSet());
+        var submitted = submittedStudents(t);
         return feed.students().stream().filter(id -> !submitted.contains(id)).toList();
+    }
+
+    private Set<Long> submittedStudents(Task t) {
+        return assignmentService
+                .submissions()
+                .selectList(new QueryWrapper<Submission>().eq("assignment_id", t.id))
+                .stream()
+                .map(s -> s.studentId)
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     public Object candidates(long id) {
@@ -51,12 +60,23 @@ public class ReminderService {
                 .toList();
     }
 
-    @Transactional
     public Object send(long id, Send in) {
-        var t = assignmentService.lockedTask(id);
-        assignmentService.owner(t);
-        if (!assignmentService.course(t.courseId).status().equals("PUBLISHED"))
+        var initial = assignmentService.task(id);
+        assignmentService.owner(initial);
+        if (!assignmentService.course(initial.courseId).status().equals("PUBLISHED"))
             throw ApiException.conflict("归档课程不能催交");
+        var feed =
+                assignmentService
+                        .remote()
+                        .call(
+                                "reminder-students",
+                                () -> assignmentService.learning().grades(initial.courseId));
+        return transaction.execute(_ -> sendLocal(id, in, initial, feed));
+    }
+
+    private Object sendLocal(long id, Send in, Task initial, Contracts.GradeFeed feed) {
+        var t = assignmentService.lockedTask(id);
+        if (!t.courseId.equals(initial.courseId)) throw ApiException.conflict("所属课程已改变，请刷新");
         assignmentService.writable(t);
         if (in.studentIds() == null
                 || in.studentIds().isEmpty()
@@ -64,8 +84,13 @@ public class ReminderService {
                 || in.studentIds().stream().anyMatch(Objects::isNull))
             throw ApiException.bad("每次选择1至100位学生");
         var ids = in.studentIds().stream().distinct().toList();
-        if (!new HashSet<>(missing(t)).containsAll(ids))
-            throw ApiException.conflict("选中学生已交卷或不属于本课程，请刷新名单");
+        var submitted = submittedStudents(t);
+        var missing =
+                new HashSet<>(
+                        feed.students().stream()
+                                .filter(student -> !submitted.contains(student))
+                                .toList());
+        if (!missing.containsAll(ids)) throw ApiException.conflict("选中学生已交卷或不属于本课程，请刷新名单");
         String text = Views.text(in.content(), 500, "提醒内容");
         int sent = 0;
         var day = Views.now().toLocalDate();
@@ -180,7 +205,6 @@ public class ReminderService {
         return Views.map("items", output, "hasMore", due.size() > 100 || rows.size() > 100);
     }
 
-    @Transactional
     public Object copy(Copy in) {
         Views.role("TEACHER");
         if (in.fromCourseId() == null
@@ -191,18 +215,22 @@ public class ReminderService {
         var to = assignmentService.course(in.toCourseId());
         if (!from.canTeach() || !to.canTeach()) throw ApiException.forbidden();
         if (!to.status().equals("PUBLISHED")) throw ApiException.conflict("请先发布新课程，再复用作业");
+        return transaction.execute(_ -> copyLocal(from.id(), to.id()));
+    }
+
+    private Object copyLocal(long from, long to) {
         var rows =
                 assignmentService
                         .tasks()
                         .selectList(
                                 new QueryWrapper<Task>()
-                                        .eq("course_id", from.id())
+                                        .eq("course_id", from)
                                         .orderByAsc("id")
                                         .last("LIMIT 101"));
         if (rows.size() > 100) throw ApiException.bad("一次最多复用100份作业");
         for (var old : rows) {
             var t = new Task();
-            t.courseId = to.id();
+            t.courseId = to;
             t.teacherId = Actor.current().id();
             t.title = old.title;
             t.description = old.description;
@@ -212,6 +240,6 @@ public class ReminderService {
             t.createdAt = t.updatedAt = Views.now();
             assignmentService.tasks().insert(t);
         }
-        return Views.map("copied", rows.size(), "courseId", to.id());
+        return Views.map("copied", rows.size(), "courseId", to);
     }
 }

@@ -26,6 +26,7 @@ __pycache__/
 !/docs/代码结构与格式.md
 !/docs/课程内容与数据初始化.md
 !/docs/依赖安全维护.md
+!/docs/事务与查询维护记录.md
 !/docs/images/
 **/.env
 **/.env.*
