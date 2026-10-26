@@ -9,7 +9,6 @@ import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
@@ -264,7 +263,6 @@ public class AssignmentService {
         t.updatedAt = Views.now();
     }
 
-    @Transactional
     public Object create(Create in) {
         Views.role("TEACHER");
         if (in.courseId() == null || in.courseId() < 1) throw ApiException.bad("请选择课程");
@@ -280,8 +278,11 @@ public class AssignmentService {
         t.teacherId = Actor.current().id();
         t.status = "DRAFT";
         t.createdAt = t.updatedAt;
-        tasks.insert(t);
-        return taskView(t);
+        return transaction.execute(
+                _ -> {
+                    tasks.insert(t);
+                    return taskView(t);
+                });
     }
 
     public Object update(long id, Write in) {
@@ -329,10 +330,13 @@ public class AssignmentService {
         return taskView(t);
     }
 
-    @Transactional
     public Object submit(long id, Answer in) {
         Task initial = task(id);
         student(initial, true);
+        return transaction.execute(_ -> submitLocal(id, in));
+    }
+
+    private Object submitLocal(long id, Answer in) {
         Task t = lockedTask(id);
         writable(t);
         String content = Views.text(in.answerText(), 10000, "答案");
@@ -369,11 +373,14 @@ public class AssignmentService {
             throw new ApiException(409, "VERSION_CONFLICT", "答案或评分已改变，请重新查看后再操作");
     }
 
-    @Transactional
     public Object modify(long id, Modify in) {
         Submission initial = submission(id);
         if (initial.studentId != Actor.current().id()) throw ApiException.forbidden();
         student(task(initial.assignmentId), true);
+        return transaction.execute(_ -> modifyLocal(id, in, initial));
+    }
+
+    private Object modifyLocal(long id, Modify in, Submission initial) {
         Task t = lockedTask(initial.assignmentId);
         Submission s = submissions.lock(id);
         writable(t);

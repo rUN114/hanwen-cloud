@@ -9,6 +9,8 @@ import org.hanwen.assignment.mapper.*;
 import org.hanwen.assignment.model.*;
 import org.hanwen.common.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.*;
 
@@ -27,15 +29,20 @@ class AgendaControllerTest {
         return t;
     }
 
-    @Test
-    void studentAgendaBatchesSubmissionStateAndRetainsUnsubmittedTasks() {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 50, 200})
+    void studentAgendaBatchesSubmissionStateAndRetainsUnsubmittedTasks(int count) {
         Actor.set(new Actor(3, "STUDENT", 0));
         var tasks = mock(TaskMapper.class);
         var submissions = mock(SubmissionMapper.class);
         var learning = mock(LearningClient.class);
         when(learning.activeCourses()).thenReturn(List.of(11L));
         when(tasks.selectCount(any())).thenReturn(201L);
-        when(tasks.selectList(any())).thenReturn(List.of(task(1), task(2)));
+        when(tasks.selectList(any()))
+                .thenReturn(
+                        java.util.stream.LongStream.rangeClosed(1, count)
+                                .mapToObj(this::task)
+                                .toList());
         var submitted = new Submission();
         submitted.id = 99L;
         submitted.assignmentId = 1L;
@@ -49,7 +56,8 @@ class AgendaControllerTest {
         var rows = (List<Map<?, ?>>) data.get("items");
         assertEquals("GRADED", rows.getFirst().get("submissionStatus"));
         assertEquals("99", rows.getFirst().get("submissionId"));
-        assertNull(rows.get(1).get("submissionId"));
+        assertEquals(count, rows.size());
+        if (count > 1) assertNull(rows.get(1).get("submissionId"));
         assertEquals(true, data.get("hasMore"));
         verify(submissions, times(1))
                 .selectList(

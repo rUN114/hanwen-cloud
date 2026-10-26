@@ -6,13 +6,15 @@ import static org.mockito.Mockito.*;
 
 import com.baomidou.mybatisplus.spring.MybatisSqlSessionFactoryBean;
 
+import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.hanwen.assignment.client.*;
 import org.hanwen.assignment.mapper.*;
 import org.hanwen.common.*;
 import org.junit.jupiter.api.*;
 import org.mybatis.spring.annotation.MapperScan;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +22,7 @@ import org.springframework.jdbc.datasource.*;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -66,6 +69,7 @@ class SubmitConcurrencyIT {
         SqlSessionFactory sqlSessionFactory(DataSource ds) throws Exception {
             var factory = new MybatisSqlSessionFactoryBean();
             factory.setDataSource(ds);
+            factory.setPlugins(new WriteTransactionCheck());
             return factory.getObject();
         }
 
@@ -113,9 +117,37 @@ class SubmitConcurrencyIT {
         }
     }
 
+    @Intercepts(
+            @Signature(
+                    type = Executor.class,
+                    method = "update",
+                    args = {MappedStatement.class, Object.class}))
+    static class WriteTransactionCheck implements Interceptor {
+        private static final Set<String> TRANSACTIONAL_MAPPERS =
+                Set.of(
+                        TaskMapper.class.getName(),
+                        SubmissionMapper.class.getName(),
+                        DraftMapper.class.getName(),
+                        GradeMapper.class.getName(),
+                        GradeHistoryMapper.class.getName(),
+                        SubmissionRevisionMapper.class.getName(),
+                        ReminderMapper.class.getName());
+
+        @Override
+        public Object intercept(Invocation invocation) throws Throwable {
+            var statement = (MappedStatement) invocation.getArgs()[0];
+            // 这些业务写入必须和状态、版本或历史一起提交；附件回收的单条条件更新不在此约束内。
+            String mapper = statement.getId().substring(0, statement.getId().lastIndexOf('.'));
+            if (TRANSACTIONAL_MAPPERS.contains(mapper))
+                assertTrue(
+                        TransactionSynchronizationManager.isActualTransactionActive(),
+                        "Mapper write requires a real transaction: " + statement.getId());
+            return invocation.proceed();
+        }
+    }
+
     @BeforeEach
     void resetData() {
-        assertTrue(AopUtils.isAopProxy(service));
         assertEquals(
                 "REPEATABLE-READ",
                 db.queryForObject("SELECT @@transaction_isolation", String.class));

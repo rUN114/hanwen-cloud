@@ -19,9 +19,9 @@ class DraftVersionTest {
 
     @ParameterizedTest
     @CsvSource(
-            value = {"NULL,400", "-1,409", "1,409"},
+            value = {"NULL,400", "-1,409", "-2,400", "1,409", "0,200"},
             nullValues = "NULL")
-    void missingVersionAndStaleFirstSaveHaveDifferentSemantics(Integer version, int status) {
+    void existingDraftDistinguishesMissingStaleAndCurrentVersions(Integer version, int status) {
         Actor.set(new Actor(3, "STUDENT", 0));
         var tasks = mock(TaskMapper.class);
         var drafts = mock(DraftMapper.class);
@@ -46,12 +46,24 @@ class DraftVersionTest {
                         null,
                         null,
                         mock(org.springframework.transaction.PlatformTransactionManager.class));
-        var error =
-                assertThrows(
-                        ApiException.class,
-                        () -> service.save(1, new AssignmentExtrasService.Write("答案", version)));
-        assertEquals(status, error.status);
-        verify(drafts, never()).updateById(any(Draft.class));
-        verify(drafts, never()).insert(any(Draft.class));
+        if (status == 200) {
+            var result =
+                    (java.util.Map<?, ?>)
+                            service.save(1, new AssignmentExtrasService.Write("答案", version));
+            assertEquals(1, result.get("version"));
+            assertEquals("答案", result.get("answerText"));
+            verify(drafts).updateById(draft);
+            verify(drafts, never()).insert(any(Draft.class));
+        } else {
+            var error =
+                    assertThrows(
+                            ApiException.class,
+                            () ->
+                                    service.save(
+                                            1, new AssignmentExtrasService.Write("答案", version)));
+            assertEquals(status, error.status);
+            verify(drafts, never()).updateById(any(Draft.class));
+            verify(drafts, never()).insert(any(Draft.class));
+        }
     }
 }

@@ -11,6 +11,8 @@ import org.hanwen.common.*;
 import org.hanwen.learning.client.CourseClient;
 import org.hanwen.learning.mapper.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
@@ -18,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.*;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.nio.file.Path;
@@ -30,6 +33,7 @@ import javax.sql.DataSource;
 @SpringJUnitConfig(LearningMutationIT.Config.class)
 class LearningMutationIT {
     @Configuration(proxyBeanMethods = false)
+    @EnableTransactionManagement
     @MapperScan(basePackageClasses = QuizAttemptMapper.class)
     @Import({
         ClassroomService.class,
@@ -177,6 +181,102 @@ class LearningMutationIT {
 
     Contracts.CourseValidation course() {
         return new Contracts.CourseValidation(11, 1, "PUBLISHED", 1, "课程", "OWNER");
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            value = {"NULL,400", "-1,400", "8,409", "9,200"},
+            nullValues = "NULL")
+    void classroomUpdateEnforcesVersionContract(Integer expected, int status) {
+        var row = (Map<?, ?>) classrooms.create(new ClassroomService.Create(11L, "原班级", "秋季", ""));
+        long id = Long.parseLong(row.get("id").toString());
+        db.update("UPDATE teaching_class SET version=9 WHERE id=?", id);
+        Runnable write =
+                () ->
+                        classrooms.update(
+                                id,
+                                new ClassroomService.Write("新班级", "秋季", "", "ACTIVE", expected));
+        checkVersionWrite(write, expected, status);
+        assertEquals(
+                status == 200 ? 10 : 9,
+                db.queryForObject(
+                        "SELECT version FROM teaching_class WHERE id=?", Integer.class, id));
+        assertEquals(
+                status == 200 ? "新班级" : "原班级",
+                db.queryForObject("SELECT name FROM teaching_class WHERE id=?", String.class, id));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"-1,400", "8,409", "9,200"})
+    void inviteCodeRotationEnforcesVersionContract(int expected, int status) {
+        var row = (Map<?, ?>) classrooms.create(new ClassroomService.Create(11L, "班级", "秋季", ""));
+        long id = Long.parseLong(row.get("id").toString());
+        db.update("UPDATE teaching_class SET version=9 WHERE id=?", id);
+        checkVersionWrite(() -> classrooms.rotate(id, expected), expected, status);
+        assertEquals(
+                status == 200 ? 10 : 9,
+                db.queryForObject(
+                        "SELECT version FROM teaching_class WHERE id=?", Integer.class, id));
+        if (status != 200)
+            assertEquals(
+                    row.get("joinCode"),
+                    db.queryForObject(
+                            "SELECT join_code FROM teaching_class WHERE id=?", String.class, id));
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            value = {"NULL,400", "-1,400", "8,409", "9,200"},
+            nullValues = "NULL")
+    void practiceDraftEnforcesVersionContractBeforeChangingAnswers(Integer expected, int status) {
+        Actor.set(new Actor(3, "STUDENT", 0));
+        when(courses.snapshot(7))
+                .thenAnswer(
+                        _ -> {
+                            outsideTransaction();
+                            return new Contracts.QuizSnapshot(
+                                    7,
+                                    11,
+                                    1,
+                                    0,
+                                    "PUBLISHED",
+                                    "PUBLISHED",
+                                    null,
+                                    null,
+                                    0,
+                                    1,
+                                    List.of());
+                        });
+        db.update(
+                "INSERT INTO quiz_run(id,quiz_id,course_id,chapter_id,student_id,quiz_version,attempt_no,max_attempts,status,started_at,deadline_at,version) VALUES(1,7,11,1,3,0,1,1,'ACTIVE',NOW(3),DATE_ADD(NOW(3),INTERVAL 1 HOUR),9)");
+        db.update(
+                "INSERT INTO quiz_run_question(run_id,question_id,prompt,option_a,option_b,option_c,option_d,correct_option,question_type,points,selected_option) VALUES(1,1,'题目','甲','乙','丙','丁','A','SINGLE',10,'B')");
+        checkVersionWrite(
+                () ->
+                        practice.draft(
+                                7,
+                                1,
+                                new PracticeService.Draft(
+                                        List.of(new Contracts.QuizChoice(1L, "A")), expected)),
+                expected,
+                status);
+        assertEquals(
+                status == 200 ? 10 : 9,
+                db.queryForObject("SELECT version FROM quiz_run WHERE id=1", Integer.class));
+        assertEquals(
+                status == 200 ? "A" : "B",
+                db.queryForObject(
+                        "SELECT selected_option FROM quiz_run_question WHERE run_id=1",
+                        String.class));
+    }
+
+    void checkVersionWrite(Runnable write, Integer expected, int status) {
+        if (status == 200) assertDoesNotThrow(write::run);
+        else {
+            var error = assertThrows(ApiException.class, write::run);
+            assertEquals(status, error.status, "expectedVersion=" + expected);
+            assertEquals(status == 400 ? "VALIDATION_ERROR" : "VERSION_CONFLICT", error.code);
+        }
     }
 
     void answerFixture(String type, String selected, String answer) {

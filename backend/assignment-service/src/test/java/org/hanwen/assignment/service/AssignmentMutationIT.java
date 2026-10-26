@@ -8,6 +8,8 @@ import org.hanwen.assignment.client.LearningClient;
 import org.hanwen.assignment.mapper.*;
 import org.hanwen.common.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -80,6 +82,7 @@ class AssignmentMutationIT {
         Actor.set(new Actor(1, "TEACHER", 0));
         db.execute("DROP TRIGGER IF EXISTS force_batch_failure");
         db.execute("DROP TRIGGER IF EXISTS force_history_failure");
+        db.execute("DROP TRIGGER IF EXISTS force_draft_cleanup_failure");
         db.update("DELETE FROM assignment_grade_history");
         db.update("DELETE FROM assignment_grade");
         db.update("DELETE FROM submission_revision");
@@ -146,6 +149,126 @@ class AssignmentMutationIT {
                         "SELECT COUNT(*) FROM assignment_task WHERE status='PUBLISHED'",
                         Integer.class));
         verify(courses, times(1)).course(11);
+    }
+
+    @Test
+    void creationValidatesCourseBeforeStartingTransaction() {
+        assignment.create(new AssignmentService.Create(11L, "新作业", "说明", "100", null, null));
+        assertEquals(3, db.queryForObject("SELECT COUNT(*) FROM assignment_task", Integer.class));
+        verify(courses, times(1)).course(11);
+    }
+
+    @Test
+    void mapperWriteGuardRejectsAccidentalAutocommit() {
+        var task = new org.hanwen.assignment.model.Task();
+        task.id = 1L;
+        task.title = "不应写入";
+        var error = assertThrows(AssertionError.class, () -> assignment.tasks().updateById(task));
+        assertTrue(error.getMessage().contains("requires a real transaction"));
+        assertEquals(
+                "fixture",
+                db.queryForObject("SELECT title FROM assignment_task WHERE id=1", String.class));
+    }
+
+    @Test
+    void submissionValidatesCourseAndEnrollmentBeforeStartingTransaction() {
+        db.update("UPDATE assignment_task SET status='PUBLISHED' WHERE id=1");
+        Actor.set(new Actor(3, "STUDENT", 0));
+        assignment.submit(1, new AssignmentService.Answer("答案"));
+        assertEquals(
+                1, db.queryForObject("SELECT COUNT(*) FROM assignment_submission", Integer.class));
+        verify(courses, times(1)).course(11);
+        verify(learning, times(1)).exists(11, 3);
+    }
+
+    @Test
+    void answerModificationValidatesRemotelyBeforeStartingTransaction() {
+        submission();
+        Actor.set(new Actor(3, "STUDENT", 0));
+        assignment.modify(1, new AssignmentService.Modify("修正答案", 0));
+        assertEquals(
+                "修正答案",
+                db.queryForObject(
+                        "SELECT answer_text FROM assignment_submission WHERE id=1", String.class));
+        verify(courses, times(1)).course(11);
+        verify(learning, times(1)).exists(11, 3);
+    }
+
+    @Test
+    void updateAndStatusTransitionsValidateBeforeStartingTransaction() {
+        assignment.update(
+                1,
+                new AssignmentService.Write(
+                        "更新题目",
+                        "说明",
+                        "100",
+                        BusinessTime.atOffset(Views.now().plusDays(2)).toString(),
+                        null));
+        assignment.transition(1, true);
+        assignment.transition(1, false);
+        assertEquals(
+                "CLOSED",
+                db.queryForObject("SELECT status FROM assignment_task WHERE id=1", String.class));
+        assertEquals(
+                "更新题目",
+                db.queryForObject("SELECT title FROM assignment_task WHERE id=1", String.class));
+        verify(courses, times(3)).course(11);
+    }
+
+    @Test
+    void copyingChecksBothCoursesBeforeStartingTransaction() {
+        when(courses.course(12))
+                .thenAnswer(
+                        _ -> {
+                            assertFalse(
+                                    TransactionSynchronizationManager.isActualTransactionActive());
+                            return new Contracts.CourseValidation(
+                                    12, 1, "PUBLISHED", 1, "目标课程", "OWNER");
+                        });
+        var result = (Map<?, ?>) reminders.copy(new ReminderService.Copy(11L, 12L));
+        assertEquals(2, result.get("copied"));
+        assertEquals(
+                2,
+                db.queryForObject(
+                        "SELECT COUNT(*) FROM assignment_task WHERE course_id=12 AND status='DRAFT'",
+                        Integer.class));
+        verify(courses, times(1)).course(11);
+        verify(courses, times(1)).course(12);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void draftCleanupFailureRollsBackSubmissionWrite(boolean editing) {
+        if (editing) submission();
+        else db.update("UPDATE assignment_task SET status='PUBLISHED' WHERE id=1");
+        db.update(
+                "INSERT INTO assignment_draft(assignment_id,student_id,answer_text,version,updated_at) VALUES(1,3,'保留草稿',0,NOW(3))");
+        db.execute(
+                "CREATE TRIGGER force_draft_cleanup_failure BEFORE DELETE ON assignment_draft FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected draft cleanup failure'");
+        Actor.set(new Actor(3, "STUDENT", 0));
+        assertThrows(
+                org.springframework.dao.DataAccessException.class,
+                () -> {
+                    if (editing) assignment.modify(1, new AssignmentService.Modify("新答案", 0));
+                    else assignment.submit(1, new AssignmentService.Answer("新答案"));
+                });
+        assertEquals(
+                editing ? 1 : 0,
+                db.queryForObject("SELECT COUNT(*) FROM assignment_submission", Integer.class));
+        if (editing) {
+            assertEquals(
+                    "原答案",
+                    db.queryForObject(
+                            "SELECT answer_text FROM assignment_submission WHERE id=1",
+                            String.class));
+            assertEquals(
+                    0,
+                    db.queryForObject(
+                            "SELECT version FROM assignment_submission WHERE id=1", Integer.class));
+        }
+        assertEquals(
+                "保留草稿",
+                db.queryForObject("SELECT answer_text FROM assignment_draft", String.class));
     }
 
     @Test
@@ -313,6 +436,7 @@ class AssignmentMutationIT {
     void cleanup() {
         db.execute("DROP TRIGGER IF EXISTS force_batch_failure");
         db.execute("DROP TRIGGER IF EXISTS force_history_failure");
+        db.execute("DROP TRIGGER IF EXISTS force_draft_cleanup_failure");
         db.update("DELETE FROM assignment_grade_history");
         db.update("DELETE FROM assignment_grade");
         Actor.clear();
