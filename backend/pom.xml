@@ -52,7 +52,7 @@
                 <!-- Keep aligned with the Spring Boot parent version. -->
                 <version>4.1.1</version>
                 <exclusions>
-                    <!-- Tests use Jackson assertions; the unused JsonPath provider brings json-smart. -->
+                    <!-- Tests use Jackson; unused JSON assertion providers add unnecessary parsers. -->
                     <exclusion>
                         <groupId>com.jayway.jsonpath</groupId>
                         <artifactId>json-path</artifactId>
@@ -60,6 +60,10 @@
                     <exclusion>
                         <groupId>net.minidev</groupId>
                         <artifactId>json-smart</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.skyscreamer</groupId>
+                        <artifactId>jsonassert</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
