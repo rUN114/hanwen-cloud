@@ -113,7 +113,7 @@ public class PracticeMarkService {
     }
 
     private Map<Long, String> displayNames(QuizAttempt a, List<QuizMarkEvent> log) {
-        var ids = new ArrayList<Long>(log.stream().map(e -> e.teacherId).toList());
+        var ids = new ArrayList<>(log.stream().map(e -> e.teacherId).toList());
         ids.add(a.studentId);
         ids.add(Actor.current().id());
         return Names.read(ids, directory, remote);
