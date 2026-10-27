@@ -2,7 +2,7 @@
 
 [![Build verification](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml/badge.svg)](https://github.com/rUN114/hanwen-cloud/actions/workflows/verify.yml)
 
-个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。当前版本为 **v7.2.2**，提供六个方向的阅读课程与有出处的诗文内容，并修复总评小数输出；首次公开 Git 快照为 v7.1.0。
+个人《微服务项目实验》课程项目。Vue 与 Spring Cloud 前后端分离，以汉文学学习为主题，提供课程、阅读、练习、习作批阅和学情管理。最近公开发布标签为 **v7.2.2**；main 分支已包含后续依赖维护、附件与资源回收、事务边界和批量查询等修订，交付时以注明的 Git 提交号为准。首次公开 Git 快照为 v7.1.0。
 
 ![书院画卷：米友仁《云山图》及馆藏来源](docs/images/museum-cloud-mountains.jpg)
 
@@ -31,8 +31,8 @@
 | backend/eureka | 服务注册与发现 | 8761 |
 | backend/gateway | 统一 API 入口 | 默认8080；本项目本机使用8088 |
 | backend/user-service | 用户、登录、会话与审计 | 8101 |
-| backend/course-service | 课程、班级、共教、诗文与题库 | 8102；第二实例8105 |
-| backend/learning-service | 学习记录、札记与练习 | 8103 |
+| backend/course-service | 课程、共教、诗文与题库 | 8102；第二实例8105 |
+| backend/learning-service | 班级、学习记录、札记与练习 | 8103 |
 | backend/assignment-service | 习作、评分、修订与总评 | 8104 |
 | database | 39表空库结构及增量迁移 | MySQL本机3307 |
 | scripts / tools / tests | 初始化、备份、构建和验证 | — |
