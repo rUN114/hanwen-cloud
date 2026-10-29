@@ -49,11 +49,16 @@ a:hover {
 }
 a:focus-visible,
 button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible {
+[tabindex]:focus-visible:where(:not(input, textarea, select)) {
   outline: 3px solid var(--red);
   outline-offset: 4px;
+}
+/* Keep form focus on the field edge without changing its dimensions. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: -2px;
 }
 h1,
 h2,
@@ -522,6 +527,10 @@ main {
   outline: none;
 }
 .el-input__wrapper:focus-within {
+  box-shadow: 0 0 0 2px var(--red) inset;
+}
+.el-textarea__inner:focus {
+  outline: none;
   box-shadow: 0 0 0 2px var(--red) inset;
 }
 .el-form-item__label {

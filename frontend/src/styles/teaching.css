@@ -58,7 +58,7 @@
 }
 .native-select:focus-visible {
   outline: 2px solid var(--red);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 .academy-banner,
 .practice-banner,

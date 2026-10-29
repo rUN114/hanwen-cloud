@@ -200,9 +200,9 @@
   color: #9f3f34;
   font-size: 13px;
 }
-.review-filters :focus-visible,
+.review-filters :focus-visible:where(:not(input, textarea, select)),
 .review-options button:focus-visible,
-.revision-panel :focus-visible {
+.revision-panel :focus-visible:where(:not(input, textarea, select)) {
   outline: 3px solid #9f3f34;
   outline-offset: 3px;
 }
