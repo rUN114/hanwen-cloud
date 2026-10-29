@@ -292,15 +292,6 @@
   line-height: 1.8;
   margin-bottom: 0;
 }
-.login-art-credit {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  padding: 5px 9px;
-  font-size: 12px;
-  color: #485743;
-  background: #fff9eceb;
-}
 .museum-preview img {
   height: 280px;
   aspect-ratio: auto;

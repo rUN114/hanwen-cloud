@@ -93,7 +93,7 @@ function state(w: Work) {
       to="/paintings"
     >
       <span aria-hidden="true">画</span>
-      AI界面插画 · 赏馆藏
+      查看书院馆藏
     </RouterLink>
   </section>
   <form

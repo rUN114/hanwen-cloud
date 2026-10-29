@@ -97,7 +97,6 @@ function submit() {
             文
           </span>
         </div>
-        <small class="login-art-credit">AI界面插画 · 梅庭迎客</small>
       </div>
       <div class="login-form">
         <img

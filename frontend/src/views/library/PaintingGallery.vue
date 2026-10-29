@@ -102,8 +102,7 @@ function chooseImage(index: number) {
     </article>
   </div>
   <p class="painting-provenance">
-    本页使用馆方开放的藏品数字照片，保留原比例、题跋和印章；仅转换网页格式，未重绘或使用 AI
-    修复。译名、约年与“传”等归属限定均保留说明。
+    本页使用馆方开放的藏品数字照片，保留原比例、题跋和印章；仅转换网页格式。译名、约年与“传”等归属限定均保留说明。
   </p>
   <el-dialog
     v-model="show"

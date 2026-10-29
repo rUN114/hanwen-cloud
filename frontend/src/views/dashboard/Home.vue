@@ -110,7 +110,7 @@ onMounted(load);
       to="/paintings"
     >
       <span aria-hidden="true">画</span>
-      {{ role === "STUDENT" ? "米友仁《云山图》" : "AI界面插画" }} · 赏馆藏
+      查看书院馆藏
     </RouterLink>
   </section>
   <StatePanel
