@@ -15,19 +15,21 @@ export class ApiError extends Error {
     super(message);
   }
 }
-// 同一页面的并发请求共用一次续期，避免轮换后的旧刷新令牌被重复使用。
+// 页面内共用一次请求；Web Lock 让同账号的其他标签页等 Cookie 轮换完成再续期。
 let renewal: Promise<void> | null = null;
 export async function renewSession(): Promise<void> {
   if (renewal) return renewal;
   const prior = session.value;
   if (!prior) throw new ApiError(401, "AUTH_REQUIRED", "请重新登录后继续");
-  renewal = (async () => {
+  const renew = async () => {
+    if (session.value?.accessToken !== prior.accessToken)
+      throw new ApiError(401, "SESSION_CHANGED", "登录身份已改变，请重新打开页面");
     let response: Response;
     try {
       response = await fetch("/api/auth/refresh", {
         method: "POST",
         credentials: "same-origin",
-        headers: { Accept: "application/json" },
+        headers: { Accept: "application/json", "X-Refresh-User": prior.user.id },
       });
     } catch {
       sessionNotice.value = "暂时无法续期，草稿继续保留。连接恢复后会重试。";
@@ -35,6 +37,8 @@ export async function renewSession(): Promise<void> {
     }
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if (session.value?.accessToken !== prior.accessToken)
+        throw new ApiError(401, "SESSION_CHANGED", "登录身份已改变，请重新打开页面");
       if (response.status === 401 || response.status === 403) expireSession();
       else sessionNotice.value = "暂时无法续期，草稿继续保留。连接恢复后会重试。";
       throw new ApiError(
@@ -53,7 +57,11 @@ export async function renewSession(): Promise<void> {
     )
       throw new ApiError(401, "SESSION_CHANGED", "登录身份已改变，请重新打开页面");
     saveSession(next);
-  })().finally(() => {
+  };
+  const pending = navigator.locks
+    ? navigator.locks.request(`hw:refresh:${prior.user.id}`, renew)
+    : renew();
+  renewal = pending.finally(() => {
     renewal = null;
   });
   return renewal;
@@ -87,12 +95,16 @@ async function request(
     });
   try {
     const token = session.value?.accessToken;
+    const userId = session.value?.user.id;
     let response = await send();
     if (response.status === 401 && auth) {
+      if (session.value?.user.id !== userId)
+        throw new ApiError(401, "SESSION_CHANGED", "登录身份已改变，请重新打开页面");
       // 其他请求已换好令牌时直接重发，避免再次续期。
       if (token === session.value?.accessToken) await renewSession();
+      const retryToken = session.value?.accessToken;
       response = await send();
-      if (response.status === 401) expireSession();
+      if (response.status === 401 && retryToken === session.value?.accessToken) expireSession();
     }
     return response;
   } catch (e) {

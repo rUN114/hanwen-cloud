@@ -14,6 +14,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -46,21 +47,24 @@ public class UserController {
             throw ApiException.forbidden();
     }
 
-    void cookie(HttpServletResponse response, RefreshService.CookieToken value) {
+    void cookie(HttpServletResponse response, RefreshService.CookieToken value, long userId) {
         response.setHeader("Cache-Control", "no-store");
-        response.addHeader(
-                "Set-Cookie",
-                ResponseCookie.from("hw_refresh", value == null ? "" : value.token())
-                        .httpOnly(true)
-                        .secure(secureCookie)
-                        .sameSite("Strict")
-                        .path("/api/auth")
-                        .maxAge(
-                                value == null
-                                        ? Duration.ZERO
-                                        : Duration.between(Views.now(), value.expiresAt()))
-                        .build()
-                        .toString());
+        // 保留旧接口的 Cookie；新页面按账号选取，教师和学生标签页不会相互覆盖。
+        for (String name : List.of("hw_refresh", "hw_refresh_" + userId)) {
+            response.addHeader(
+                    "Set-Cookie",
+                    ResponseCookie.from(name, value == null ? "" : value.token())
+                            .httpOnly(true)
+                            .secure(secureCookie)
+                            .sameSite("Strict")
+                            .path("/api/auth")
+                            .maxAge(
+                                    value == null
+                                            ? Duration.ZERO
+                                            : Duration.between(Views.now(), value.expiresAt()))
+                            .build()
+                            .toString());
+        }
     }
 
     @Bean
@@ -75,8 +79,9 @@ public class UserController {
         checkOrigin(r, false);
         @SuppressWarnings("unchecked")
         var result = (Map<String, Object>) service.login(in, r.getRemoteAddr());
-        var value = refresh.open(jwt.parse("Bearer " + result.get("accessToken")));
-        cookie(response, value);
+        var actor = jwt.parse("Bearer " + result.get("accessToken"));
+        var value = refresh.open(actor);
+        cookie(response, value, actor.id());
         result.put("sessionExpiresAt", BusinessTime.atOffset(value.expiresAt()).toString());
         return ApiResponse.ok(result);
     }
@@ -84,19 +89,31 @@ public class UserController {
     @PostMapping("/api/auth/refresh")
     public Object renew(
             @CookieValue(name = "hw_refresh", required = false) String token,
+            @RequestHeader(name = "X-Refresh-User", required = false) Long userId,
             HttpServletRequest r,
             HttpServletResponse response)
             throws Exception {
         checkOrigin(r, true);
-        var renewed = refresh.renew(token);
-        cookie(response, renewed.cookie());
+        if (userId != null) {
+            if (userId < 1) throw ApiException.bad("账号编号不合法");
+            if (r.getCookies() != null) {
+                for (var cookie : r.getCookies()) {
+                    if (cookie.getName().equals("hw_refresh_" + userId)) {
+                        token = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+        var renewed = refresh.renew(token, userId);
+        cookie(response, renewed.cookie(), renewed.userId());
         return ApiResponse.ok(renewed.data());
     }
 
     @PostMapping("/api/auth/logout")
     public Object logout(HttpServletResponse response) {
         service.logout();
-        cookie(response, null);
+        cookie(response, null, Actor.current().id());
         return ApiResponse.ok(null);
     }
 

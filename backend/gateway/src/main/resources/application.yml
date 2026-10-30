@@ -30,7 +30,7 @@ spring.cloud.gateway.server.webflux:
       '[/**]':
         allowedOrigins: ${HW_FRONTEND_ORIGIN:http://127.0.0.1:5173}
         allowedMethods: [GET,POST,PUT,DELETE,OPTIONS]
-        allowedHeaders: [Authorization,Content-Type]
+        allowedHeaders: [Authorization,Content-Type,X-Refresh-User]
         exposedHeaders: [X-Trace-Id]
 eureka:
   client:

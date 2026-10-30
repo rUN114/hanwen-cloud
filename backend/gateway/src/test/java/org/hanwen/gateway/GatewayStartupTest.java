@@ -78,7 +78,9 @@ class GatewayStartupTest {
         assertNotNull(cors);
         assertEquals(List.of("http://127.0.0.1:5173"), cors.getAllowedOrigins());
         assertEquals(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"), cors.getAllowedMethods());
-        assertEquals(List.of("Authorization", "Content-Type"), cors.getAllowedHeaders());
+        assertEquals(
+                List.of("Authorization", "Content-Type", "X-Refresh-User"),
+                cors.getAllowedHeaders());
         assertEquals(List.of("X-Trace-Id"), cors.getExposedHeaders());
     }
 
@@ -122,7 +124,9 @@ class GatewayStartupTest {
                         .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                         .header("Origin", origin)
                         .header("Access-Control-Request-Method", "POST")
-                        .header("Access-Control-Request-Headers", "Authorization, Content-Type")
+                        .header(
+                                "Access-Control-Request-Headers",
+                                "Authorization, Content-Type, X-Refresh-User")
                         .build();
         try (var client = HttpClient.newHttpClient()) {
             return client.send(request, HttpResponse.BodyHandlers.ofString());

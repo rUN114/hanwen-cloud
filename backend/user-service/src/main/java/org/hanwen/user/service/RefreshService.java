@@ -23,7 +23,7 @@ public class RefreshService {
 
     public record CookieToken(String token, LocalDateTime expiresAt) {}
 
-    public record Renewed(Object data, CookieToken cookie) {}
+    public record Renewed(Object data, CookieToken cookie, long userId) {}
 
     record Stored(long id, long user, int version, LocalDateTime expires) {}
 
@@ -71,7 +71,7 @@ public class RefreshService {
         valid(u, actor.version());
         var now = Views.now();
         String token = randomToken();
-        var expires = now.plusHours(8);
+        var expires = now.plusDays(7);
         // 只清理到期会话，登录审计另存；每次最多删一千条，避免长时间占用事务。
         db.update("DELETE FROM auth_refresh_session WHERE expires_at < ? LIMIT 1000", now);
         db.update(
@@ -89,7 +89,7 @@ public class RefreshService {
     }
 
     @Transactional
-    public Renewed renew(String token) throws Exception {
+    public Renewed renew(String token, Long expectedUser) throws Exception {
         if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) throw expired();
         String digest = hash(token);
         var records =
@@ -104,6 +104,8 @@ public class RefreshService {
                         digest);
         if (records.size() != 1) throw expired();
         var old = records.getFirst();
+        // 账号编号仅选择对应的 HttpOnly Cookie，身份仍由随机凭据及数据库记录确定。
+        if (expectedUser != null && old.user() != expectedUser) throw expired();
         User u = users.lock(old.user());
         valid(u, old.version());
         // 续期、重置密码和退出都先锁用户；下方按旧摘要更新，确保同一令牌只能续期一次。
@@ -138,6 +140,7 @@ public class RefreshService {
                         old.expires(),
                         "user",
                         UserService.view(u)),
-                new CookieToken(next, old.expires()));
+                new CookieToken(next, old.expires()),
+                u.id);
     }
 }
